@@ -1,8 +1,41 @@
-var v_register = new Vue( {
-    el: '#register',
-    data: {
-        isLogin: false,
-        username: 'gaotian'
+const store = new Vuex.Store( {
+    state : {
+        isLogin: true,
+        username: 'gt',
+        token: '',
+        currOrder: {},
+        totalPrice: 0
+    },
+    mutations: {
+        SetOrder (state, data) {
+            order = data[0];
+            totalPrice = data[1];
+            state.currOrder = {};
+            for (key in order) {
+                if (parseInt(order[key][1]) != 0) {
+                    state.currOrder[key] = [order[key][0], parseInt(order[key][1])];
+                }
+            }
+            state.totalPrice = totalPrice
+        },
+        Logoff (state) {
+            state.isLogin = false;
+        }
+    }
+})
+Vue.component('register', {
+    computed: {
+        isLogin: function() {
+            return store.state.isLogin;
+        },
+        username: function() {
+            return store.state.username;
+        }
+    },
+    methods: {
+        Logoff: function() {
+            store.commit('Logoff');
+        }
     }
 });
 
@@ -10,8 +43,14 @@ var v_confirm = new Vue( {
     el: '#confirm_modal',
     data: {
         title: "title",
-        items: [["item1", 2.5, 2], ["item2", 2.5, 1]],
-        totalPrice: 7.5
+    },
+    computed: {
+        order: function() {
+            return store.state.currOrder;
+        },
+        totalPrice: function() {
+            return store.state.totalPrice;
+        }
     }
 });
 
@@ -24,39 +63,73 @@ var v_nav = new Vue ( {
     }
 });
 
-var v_page = new Vue( {
-    el: '#foot_page',
-    data: {
-        firstPageNum : 1,
-        totalPageNum : 3,
+Vue.component('foot-page-nav', {
+    data: function() {
+        return {
+            firstPageNum : 1,
+            totalPageNum : 3,
+        }
     }
 });
 
 var fake_posts = [
-    {title: "post1", author:"author1", expire_time:"1", content:"abcd", items:{"item1":1, "item2":2.2}},
-    {title: "post2", author:"author2", expire_time:"1", content:"ajcd", items:{"item11":1.01, "item21":2.09}},
-    {title: "post3", author:"author3", expire_time:"1", content:"akcd", items:{"item1":221, "item2":212}},
-    {title: "post4", author:"author4", expire_time:"1", content:"alcd", items:{"item111":1, "item2241":2.10}},
-    {title: "post5", author:"author5", expire_time:"1", content:"abjd", items:{"item1":12, "item23":2}}
+    {title: "post1", author:"author1", expire_time:"1", content:"abcd", items:[{"name":"item1", "price":1}, {"name":"item2", "price":2.2}], is_display:false},
+    {title: "post2", author:"author2", expire_time:"1", content:"ajcd", items:[{"name":"item11", "price":1.01}, {"name":"item21", "price":2.09}], is_display:false},
+    {title: "post3", author:"author3", expire_time:"1", content:"akcd", items:[{"name":"item1", "price":221}, {"name":"item2", "price":212}], is_display:false},
+    {title: "post4", author:"author4", expire_time:"1", content:"alcd", items:[{"name":"item111", "price":1}, {"name":"item2241", "price":2.10}], is_display:false},
+    {title: "post5", author:"author5", expire_time:"1", content:"abjd", items:[{"name":"item1", "price":12}, {"name":"item23", "price":2}], is_display:false}
 ];
-
-var v_posts = new Vue( {
-    el: '#posts_div',
-    data: {
-        posts: fake_posts
-    },
-    methods: {
-        ToggleDisplay: function() {
-            posts=[];
-            console.log("123");
+Vue.component ('v-items', {
+    props: ['items'],
+    data : function() {
+        orderVal = {}
+        for (idx in this.items) {
+            orderVal[this.items[idx]['name']] = [this.items[idx]['price'], 0];
         }
-    }
-})
-
+        return {
+            order: orderVal
+        };
+    },
+    computed : {
+        totalPrice: function() {
+            price = 0;
+            for (idx in this.items) {
+                item = this.items[idx];
+                if (this.order[item['name']][1] == '') {
+                    num = 0;
+                } else {
+                    num = parseInt(this.order[item['name']][1]);
+                    if (isNaN(num)) {
+                        return ""
+                    }
+                    price += parseFloat(item['price']) * parseInt(this.order[item['name']][1]);
+                }
+            }
+            return price.toFixed(2);
+        }
+    },
+    methods : {
+        SubmitOrder: function() {
+            store.commit('SetOrder', [this.order, this.totalPrice]);
+        }
+    } 
+});
 var v_main = new Vue( {
     el: '#main_content',
     data : {
-        counter :1,
-        currPage: "home"
+        currPage: "home",
+        posts: fake_posts
+    },
+    methods: {
+        ToggleDisplay: function(post) {
+            if (post['is_display'] == false) {
+                for (var i = 0; i < this.$data.posts.length; i++) {
+                    this.$data.posts[i]['is_display'] = false;
+                }
+                post['is_display'] = true;
+            } else {
+                post['is_display'] = false;
+            }
+        }
     }
 });
