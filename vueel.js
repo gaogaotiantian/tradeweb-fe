@@ -1,3 +1,4 @@
+var server_url = "http://localhost:8000";
 const store = new Vuex.Store( {
     state : {
         isLogin: true,
@@ -53,6 +54,35 @@ var v_confirm = new Vue( {
         }
     }
 });
+
+var v_login = new Vue( {
+    el: '#login_modal',
+    data: {
+        signup_username: "",
+        signup_password: "",
+        signup_password_again: ""
+
+    },
+    methods: {
+        Register: function() {
+            console.log("reg")
+            $.ajax({
+                url: server_url+"/register",
+                method: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({"username": this.signup_username, "password": this.signup_password}),
+            })
+            .done(function(msg) {
+                alert("Done!");
+                console.log(msg);
+            })
+            .fail(function(msg) {
+                console.log(msg)
+            });
+        }
+    }
+}) 
 
 var v_nav = new Vue ( {
     el: '#top_nav',
