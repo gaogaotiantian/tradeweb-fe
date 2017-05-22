@@ -6,6 +6,7 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <script src="https://cdn.bootcss.com/vue/2.3.3/vue.js"></script>
   <script src="https://cdn.bootcss.com/vuex/2.3.1/vuex.js"></script>
+  <link href="./mine.css" rel="stylesheet">
   </head>
 <body>
 <div class="container">
@@ -21,6 +22,9 @@
           <register inline-template>
             <ul class="nav navbar-nav navbar-right">
               <li v-if="isLogin">
+                <button class="navbar-btn btn btn-primary" data-toggle="modal" data-target="#new_post_modal">我要卖东西</button>
+              </li>
+              <li v-if="isLogin">
                 <p class="navbar-text">Welcome! {{username}} <a href="#" @click="Logoff()">登出</a></p>
               </li>
               <li v-else>
@@ -34,65 +38,97 @@
   </div>
   <div id="main_content">
     <!-- Home Page -->
-    <div v-if="currPage == 'home'">
+    <div>
       <div class="row">
         <div class="col-md-2">
           <nav class="nav-sidebar">
-            <ul class="nav nav-pills nav-stacked">
-              <li class="active"><a href="#tab_waimai" data-toggle="tab">外卖</a></li>
-              <li><a href="#tab_jiaju" data-toggle="tab">家具</a></li>
-              <li><a href="#tab_pinche" data-toggle="tab">拼车</a></li>
+            <ul v-if="currPage == 'home'" class="nav nav-pills nav-stacked">
+              <li class="active"><a href="#tab_waimai" data-toggle="tab" @click="category='外卖';GetPosts()">外卖</a></li>
+              <li><a href="#tab_jiaju" data-toggle="tab" @click="category='家具';GetPosts()">家具</a></li>
+              <li><a href="#tab_pinche" data-toggle="tab" @click="category='拼车';GetPosts()">拼车</a></li>
+              <li><a href="#tab_wode" data-toggle="tab" @click="category='我的';GetPosts()">我的</a></li>
+            </ul>
+            <ul v-if="currPage == 'myOrder'" class="nav nav-pills nav-stacked">
+              <li class="active"><a href="#tab_tome" data-toggle="tab" @click="category='ToMe';GetOrders()">向我求购</a></li>
+              <li><a href="#tab_fromme" data-toggle="tab" @click="category='FromMe';GetOrders()">我的购买</a></li>
             </ul>
           </nav>
         </div>
-        <div id="posts_div" class="col-md-10">
+        <div id="posts_div" class="col-md-10" v-if="currPage == 'home'">
           <div class="row" v-for="post in posts">
             <div class="col-md-12">
-              <div class="panel panel-default">
-                <div class="panel-heading" v-on:click="ToggleDisplay(post)">
-                  <span><h3>{{post.title}}</h3></span><span>by {{post.author}}</span>
-                </div>
-                <div class="panel-body" v-show="post['is_display']">
-                  <p>{{post.content}}</p>
-                  <v-items inline-template :items="post.items">
-                    <div class="item_wrapper_div">
-                      <div class="item_div row" style="vertical-align:center" v-for="item in items">
-                        <div class="col-md-1 text-center">
-                          <span class="item_name">{{item["name"]}}</span>
-                        </div>
-                        <div class="col-md-1 text-right">
-                          <span class="item_price">{{item["price"]}}</span>
-                        </div>
-                        <div class="col-md-1">
-                          <input class="item_number form-control" type=text v-model="order[item['name']][1]">
-                        </div>
+              <v-post :post="post" inline-template>
+                <div class="panel" v-bind:class="{'panel-default':!deletePost, 'panel-danger':deletePost}">
+                  <div class="panel-heading" v-on:click="ToggleDisplay(post)">
+                    <div class="row" style="display:flex; align-items:baseline">
+                      <div class="col-md-8">
+                        <h3>{{post.title}}</h3>
                       </div>
-                      <div class="item_total_div row">
-                        <div class="col-md-3 pull-right">
-                          <span>总价：{{totalPrice}}</span>
-                          <button class="btn btn-success btn-lg pull-right" data-toggle="modal" data-target="#confirm_modal" @click="SubmitOrder()">下单</button>
-                        </div>
+                      <div class="col-md-2" v-if="!post['is_deleted'] && !deleteConfirm">
+                        <span>by {{post.author}}</span>
+                      </div>
+                      <div class="col-md-2" v-if="!post['is_deleted'] && !deleteConfirm">
+                        <button class="btn btn-danger pull-right" v-if="IsAuthorMe(post.author)" @click.stop="deleteConfirm=true">删除</button>
+                      </div>
+                      <div class="col-md-4" v-if="!post['is_deleted'] && deleteConfirm">
+                        <button class="btn btn-danger" @click.stop="deleteConfirm=false;DeletePost()">确认删除</button>
+                        <button class="btn" @click.stop="deleteConfirm=false">取消</button>
+                      </div>
+                      <div class="col-md-4" v-if="post['is_deleted']">
+                        已删除
                       </div>
                     </div>
-                  </v-items>
+                  </div>
+                  <div class="panel-body" v-if="post['is_display']">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <p>{{post.content}}</p>
+                      </div>
+                      <div class="col-md-6">
+                        <v-items inline-template :items="post.items" :post="post">
+                          <div class="item_wrapper_div">
+                          <form class="form-horizontal">
+                            <div class="item_div form-group" style="vertical-align:center" v-for="item in items">
+                              <label class="col-md-4 item_name control-label">{{item["name"]}}</label>
+                              <label class="col-md-4 item_price control-label">${{item["price"]}}</label>
+                              <div class="col-md-4">
+                                <input class="item_number form-control" type=number v-model="order[item['name']][1]">
+                              </div>
+                            </div>
+                            <div class="item_total_div form-group">
+                              <div class="col-md-offset-9">
+                                <label>总价：{{totalPrice}}</label>
+                            </div>
+                            <div class="form-group">
+                              <div class="col-md-offset-9">
+                                <button class="btn btn-success btn-lg" data-toggle="modal" data-target="#confirm_modal" @click="SubmitOrder()" type="button">下单</button>
+                              </div>
+                            </div>
+                          </form>
+                          </div>
+                        </v-items>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </v-post>
             </div>
           </div>
+          <div class="row" v-for="order in orders" v-if="currPage='myOrder'">
         </div>
       </div>
       <div class="row">
         <div class="col">
         <!-- foot page -->
-          <foot-page-nav inline-template>
+          <div>
             <nav aria-label="Page navigation" class="text-center">
               <ul class="pagination" id="foot_page">
-                <li><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>
-                <li v-for="i in 5" v-if="firstPageNum + i - 1 <= totalPageNum"><a href="#">{{firstPageNum + i - 1}}</a></li>
-                <li><a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>
+                <li><a href="#" aria-label="Previous"><span aria-hidden="true" @click="ChangePageNum(currPageNum-1)">&laquo;</span></a></li>
+                <li v-for="i in 5" v-bind:class="{active: (firstPageNum+i-1)==currPageNum}"><a href="#" @click=ChangePageNum(firstPageNum+i-1)>{{firstPageNum + i - 1}}</a></li>
+                <li><a href="#" aria-label="Next" @click="ChangePageNum(currPageNum+1)"><span aria-hidden="true">&raquo;</span></a></li>
               </ul>
             </nav>
-          </foot-page-nav>
+          </div>
         </div>
       </div>
     </div>
@@ -119,27 +155,31 @@
         <div class="tab-content">
           <!-- login part -->
           <div class="tab-pane fade active in" id="signin">
-            <form class="form-horizontal">
+            <form class="form-horizontal" @submit.prevent="Login">
             <fieldset>
 
               <div class="control-group">
                 <label class="control-label" for="login_username">用户名：</label>
                 <div class="controls">
-                  <input required="" id="login_username" type="text" class="form-control">
+                  <input required="" id="login_username" type="text" class="form-control" v-model="login_username_val">
                 </div>
               </div>
 
               <div class="control-group">
                 <label class="control-label" for="login_password">密码：</label>
                 <div class="controls">
-                  <input required="" id="login_password" type="password" class="form-control">
+                  <input required="" id="login_password" type="password" class="form-control" v-model="login_password_val">
                 </div>
               </div>
 
               <div class="control-group">
                 <label class="control-label" for="login_button"></label>
+                <div class="alert alert-danger" role="alert" v-if="err_login">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  {{err_login_msg}}
+                </div>
                 <div class="controls">
-                  <button id="login_button" class="btn btn-success">登录</button>
+                  <button id="login_button" class="btn btn-success" @click="Login()">登录</button>
                 </div>
               </div>
 
@@ -148,47 +188,132 @@
           </div>
           <!-- signup part -->
           <div class="tab-pane fade" id="signup">
-            <form class="form-horizontal">
+            <form class="form-horizontal" @submit.prevent="Register">
             <fieldset>
 
               <div class="control-group">
                 <label class="control-label" for="signup_email">Email：</label>
+                <div class="alert alert-danger" role="alert" v-if="!email_valid">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  Enter a valid email address!
+                </div>
                 <div class="controls">
-                  <input required="" id="signup_email" type="text" class="form-control">
+                  <input required="" id="signup_email" type="text" class="form-control" v-model="signup_email_val" @blur="CheckEmailValid()">
                 </div>
               </div>
               
               <div class="control-group">
                 <label class="control-label" for="signup_username">用户名：</label>
+                <div class="alert alert-danger" role="alert" v-if="!username_valid">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  {{signup_username_err_msg}}
+                </div>
                 <div class="controls">
-                  <input required="" id="signup_username" type="text" class="form-control" v-model="signup_username">
+                  <input required="" id="signup_username" type="text" class="form-control" v-model="signup_username_val" @blur="CheckUsernameValid()">
                 </div>
               </div>
 
               <div class="control-group">
                 <label class="control-label" for="signup_password">密码：</label>
+                <div class="alert alert-danger" role="alert" v-if="!password_valid">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  密码至少要8位
+                </div>
                 <div class="controls">
-                  <input required="" id="signup_password" type="password" class="form-control" v-model="signup_password">
+                  <input required="" id="signup_password" type="password" class="form-control" v-model="signup_password_val" @blur="CheckPasswordValid()">
                 </div>
               </div>
 
               <div class="control-group">
                 <label class="control-label" for="signup_password_again">再次输入密码：</label>
+                <div class="alert alert-danger" role="alert" v-if="!password_again_valid">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  两次密码输入需一致！
+                </div>
                 <div class="controls">
-                  <input required="" id="signup_password_again" type="password" class="form-control" v-model="signup_password_again">
+                  <input required="" id="signup_password_again" type="password" class="form-control" v-model="signup_password_again_val" @blur="CheckPasswordAgainValid()">
                 </div>
               </div>
 
               <div class="control-group">
                 <label class="control-label" for="signup_button"></label>
+                <div class="alert alert-danger" role="alert" v-if="err_reg">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  {{err_reg_msg}}
+                </div>
                 <div class="controls">
-                  <button id="login_button" class="btn btn-success" @click="Register()">注册</button>
+                  <button id="login_button" class="btn btn-success">注册</button>
                 </div>
               </div>
 
             </fieldset>
             </form>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal for new posts -->
+<div class="modal bs-modal-lg fade" id="new_post_modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-head text-center">
+      </div>
+      <div class="modal-body">
+        <div v-if="show_panel == 'normal'">
+          <label for="new_post_title"></label>
+          <form @submit.prevent="SubmitPost">
+            <div class="row">
+              <div class="col-md-2">
+                <select required="" class="form-control pull-right" v-model="category">
+                  <option>外卖</option>
+                  <option>家具</option>
+                  <option>拼车</option>
+                </select>
+              </div>
+              <div class="col-md-10">
+                <input type="text" class="form-control" id="new_post_title" required="" placeholder="起一个吸引人的标题！" v-model="title">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-8">
+                <label for="new_post_content"></label>
+                <textarea rows="10" class="form-control" id="new_post_content" required="" placeholder="简单介绍一下你的东西吧！" v-model="content"></textarea>
+              </div>
+              <div class="col-md-4">
+                <label></label>
+                <div class="row" v-for="i in max_item_num">
+                  <div class="col-md-7">
+                    <input type="text" class="form-control" placeholder="物品" v-model="items[i-1]">
+                  </div>
+                  <div class="col-md-4 input-group" v-bind:class="{'has-error':errors[i-1]}">
+                    <span class="input-group-addon">$</span>
+                    <input type="number" step=0.01 class="form-control" placeholder="价格" v-model="prices[i-1]">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="control-group">
+                <label class="control-label"></label>
+                <div class="alert alert-danger" role="alert" v-if="err_msg != ''">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                  {{err_msg}}
+                </div>
+                <div class="col-md-1 pull-right controls">
+                  <button class="btn btn-lg btn-success pull-right">确定</button>
+                </div>
+                <div class="col-md-1 pull-right controls">
+                  <button class="btn btn-lg btn-fail pull-right" data-dismiss="modal">取消</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div v-if="show_panel == 'success'">
+          <p>发贴成功，3秒后返回主页！</p>
+        </div>
         </div>
       </div>
     </div>
@@ -202,42 +327,51 @@
         <h3>{{title}}</h3>
       </div>
       <div class="modal-body">
-        <div class="row">
-          <div class="col-md-12">
-            <p v-for="(data, item) in order">{{item}}: {{data[0]}}x{{data[1]}}</p>
-            <h4 class="pull-right">总价：{{totalPrice}}</h4>
+        <div v-if="show_panel == 'normal'">
+          <div class="row">
+            <div class="col-md-12">
+              <p v-for="(data, item) in order">{{item}}: {{data[0]}}x{{data[1]}}</p>
+              <h4 class="pull-right">总价：{{totalPrice}}</h4>
+            </div>
           </div>
+          <form class="form-horizontal">
+          <fieldset>
+
+            <div class="control-group">
+              <label class="control-label" for="confirm_email">Email: </label>
+              <div class="controls">
+                <input required="" id="confirm_email" type="text" class="form-control" v-model="email">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="confirm_cell">手机: </label>
+              <div class="controls">
+                <input required="" id="confirm_cell" type="text" class="form-control" v-model="cell">
+              </div>
+            </div>
+            
+            <br>
+            <div class="control-group">
+              <label class="control-label"></label>
+              <div class="alert alert-danger" role="alert" v-if="confirmFail">
+                <span class="glyphicon glyphicon-exclamation-sign"></span>
+                {{err_msg}}
+              </div>
+              <div class="col-md-2 pull-right controls">
+                <button class="btn btn-lg btn-success pull-right" @click.prevent="Submit()">确定</button>
+              </div>
+              <div class="col-md-2 pull-right controls">
+                <button class="btn btn-lg btn-fail pull-right" data-dismiss="modal">取消</button>
+              </div>
+            </div>
+
+          </fieldset>
+          </form>
         </div>
-        <form class="form-horizontal">
-        <fieldset>
-
-          <div class="control-group">
-            <label class="control-label" for="confirm_email">Email: </label>
-            <div class="controls">
-              <input required="" id="confirm_email" type="text" class="form-control">
-            </div>
-          </div>
-
-          <div class="control-group">
-            <label class="control-label" for="confirm_cell">手机: </label>
-            <div class="controls">
-              <input required="" id="confirm_cell" type="text" class="form-control">
-            </div>
-          </div>
-          
-          <br>
-          <div class="control-group">
-            <label class="control-label"></label>
-            <div class="col-md-2 pull-right controls">
-              <button class="btn btn-lg btn-success pull-right">确定</button>
-            </div>
-            <div class="col-md-2 pull-right controls">
-              <button class="btn btn-lg btn-fail pull-right" data-dismiss="modal">取消</button>
-            </div>
-          </div>
-
-        </fieldset>
-        </form>
+        <div v-if="show_panel == 'success'">
+          订单递交成功！
+        </div>
       </div>
     </div>
   </div>
