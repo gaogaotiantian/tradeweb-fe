@@ -42,20 +42,20 @@
       <div class="row">
         <div class="col-md-2">
           <nav class="nav-sidebar">
-            <ul v-if="currPage == 'home'" class="nav nav-pills nav-stacked">
-              <li class="active"><a href="#tab_waimai" data-toggle="tab" @click="category='外卖';GetPosts()">外卖</a></li>
-              <li><a href="#tab_jiaju" data-toggle="tab" @click="category='家具';GetPosts()">家具</a></li>
-              <li><a href="#tab_pinche" data-toggle="tab" @click="category='拼车';GetPosts()">拼车</a></li>
-              <li><a href="#tab_wode" data-toggle="tab" @click="category='我的';GetPosts()">我的</a></li>
+            <ul id="home_ul" v-show="currPage == 'home'" class="nav nav-pills nav-stacked">
+              <li class="active"><a href="#tab_waimai" data-toggle="tab" @click="post_category='外卖';GetPosts()">外卖</a></li>
+              <li><a href="#tab_jiaju" data-toggle="tab" @click="post_category='家具';GetPosts()">家具</a></li>
+              <li><a href="#tab_pinche" data-toggle="tab" @click="post_category='拼车';GetPosts()">拼车</a></li>
+              <li><a href="#tab_wode" data-toggle="tab" @click="post_category='我的';GetPosts()">我的</a></li>
             </ul>
-            <ul v-if="currPage == 'myOrder'" class="nav nav-pills nav-stacked">
-              <li class="active"><a href="#tab_tome" data-toggle="tab" @click="category='ToMe';GetOrders()">向我求购</a></li>
-              <li><a href="#tab_fromme" data-toggle="tab" @click="category='FromMe';GetOrders()">我的购买</a></li>
+            <ul id="myorder_ul" v-show="currPage == 'myOrder'" class="nav nav-pills nav-stacked">
+              <li class="active"><a href="#tab_tome" data-toggle="tab" @click="order_category='toMe';GetOrders()">向我求购</a></li>
+              <li><a href="#tab_fromme" data-toggle="tab" @click="order_category='fromMe';GetOrders()">我的购买</a></li>
             </ul>
           </nav>
         </div>
-        <div id="posts_div" class="col-md-10" v-if="currPage == 'home'">
-          <div class="row" v-for="post in posts">
+        <div id="posts_div" class="col-md-10">
+          <div class="row" v-for="post in posts" v-if="currPage == 'home'">
             <div class="col-md-12">
               <v-post :post="post" inline-template>
                 <div class="panel" v-bind:class="{'panel-default':!deletePost, 'panel-danger':deletePost}">
@@ -92,16 +92,17 @@
                               <label class="col-md-4 item_name control-label">{{item["name"]}}</label>
                               <label class="col-md-4 item_price control-label">${{item["price"]}}</label>
                               <div class="col-md-4">
-                                <input class="item_number form-control" type=number v-model="order[item['name']][1]">
+                                <input class="item_number form-control input-sm" type=number v-model="order[item['name']][1]">
                               </div>
                             </div>
                             <div class="item_total_div form-group">
                               <div class="col-md-offset-9">
                                 <label>总价：{{totalPrice}}</label>
+                              </div>
                             </div>
-                            <div class="form-group">
-                              <div class="col-md-offset-9">
-                                <button class="btn btn-success btn-lg" data-toggle="modal" data-target="#confirm_modal" @click="SubmitOrder()" type="button">下单</button>
+                            <div class="form-group pull-right">
+                              <div class="col-md-12">
+                                <button class="btn btn-success" data-toggle="modal" data-target="#confirm_modal" @click="SubmitOrder()" type="button">下单</button>
                               </div>
                             </div>
                           </form>
@@ -114,10 +115,79 @@
               </v-post>
             </div>
           </div>
-          <div class="row" v-for="order in orders" v-if="currPage='myOrder'">
+          <div class="row" v-for="order in orders" v-if="currPage=='myOrder'">
+            <div class="col-md-12">
+              <v-order :order="order" inline-template>
+                <div class="panel" v-bind:class="classObject">
+                  <div class="panel-heading" @click="ToggleDisplay(order)">
+                    <div class="row" style="display:flex; align-items:baseline">
+                      <div class="col-md-8">
+                        <h3>{{order.title}}</3>
+                      </div>
+                      <div class="col-md-2">
+                        by {{order.to_user}}
+                      </div>
+                      <div class="col-md-2">
+                        {{statusText}}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="panel-body" v-show="order['is_display']">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="row" v-for='orderContent, orderName in order.order'>
+                          <form>
+                            <label class="col-md-4 control-label">{{orderName}}</label>
+                            <label class="col-md-4 control-label">${{orderContent[0]}}</label>
+                            <label class="col-md-4 control-label">x{{orderContent[1]}}</label>
+                          </form>
+                        </div>
+                        <div class="row">
+                          {{order.note}}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="row">
+                          {{order.from_user}}
+                        </div>
+                        <div class="row">
+                          {{order.from_user_email}}
+                        </div>
+                        <div class="row">
+                          {{order.from_user_cell}}
+                        </div>
+                        <div class="row">
+                          {{order.from_user_address}}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="row pull-right" v-if="orderToMe && order.status=='ready'">
+                      <div class="col-md-12">
+                        <button class="btn btn-danger" @click="Action('decline')">拒绝订单</button>
+                        <button class="btn btn-primary" @click="Action('confirm')">确认订单</button>
+                      </div>
+                    </div>
+                    <div class="row pull-right" v-if="orderFromMe && order.status=='ready'">
+                      <div class="col-md-12">
+                        <button class="btn btn-danger" @click="Action('cancel')">取消订单</button>
+                      </div>
+                    </div>
+                    <div class="row pull-right" v-if="orderFromMe && order.status=='confirm'">
+                      <div class="col-md-12">
+                        <button class="btn btn-danger" @click="Action('unfinish')">交易失败</button>
+                        <button class="btn btn-success" @click="Action('finish')">交易完成</button>
+                      </div>
+                    </div>
+                  </div>
+                  <action-confirm-modal :callback="callback" :callback_data="callback_data" :id="'orderConfirm'" :button_type="button_type">
+                  </action-confirm-modal>
+                </div>
+              </v-order>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="row">
+      <div class="row" v-if="currPage == 'home' || currPage == 'myOrder'">
         <div class="col">
         <!-- foot page -->
           <div>
@@ -131,9 +201,6 @@
           </div>
         </div>
       </div>
-    </div>
-    <div v-if="currPage == 'myOrder'">
-      myorder
     </div>
     <div v-if="currPage == 'about'">
       about
@@ -348,6 +415,20 @@
               <label class="control-label" for="confirm_cell">手机: </label>
               <div class="controls">
                 <input required="" id="confirm_cell" type="text" class="form-control" v-model="cell">
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label class="control-label" for="confirm_address">地址: </label>
+              <div class="controls">
+                <input required="" id="confirm_address" type="text" class="form-control" v-model="address">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="confirm_note">备注: </label>
+              <div class="controls">
+                <input id="confirm_note" type="text" class="form-control" v-model="note">
               </div>
             </div>
             

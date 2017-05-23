@@ -76,6 +76,33 @@ const store = new Vuex.Store( {
     }
 })
 
+Vue.component('action-confirm-modal', {
+    template: `
+      <div class="modal bs-modal-sm fade" v-bind:id="id" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-head text-center">
+            </div>
+            <div class="modal-body">
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="row pull-right">
+                    <div class="col-md-12">
+                      <button class="btn btn-default" data-dismiss="modal">取消操作</button>
+                      <button class="btn" v-bind:class="button_type" @click="callback(callback-data)">确认操作</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    props: ['callback', 'callback_data', 'id', 'button_type'],
+    
+});
+
 Vue.component('register', {
     computed: {
         isLogin: function() {
@@ -107,6 +134,8 @@ var v_confirm = new Vue( {
         show_panel: "normal",
         email: "",
         cell: "",
+        address: "",
+        note: "",
         confirmFail: false,
         err_msg: ""
     },
@@ -134,6 +163,8 @@ var v_confirm = new Vue( {
                 token     : store.state.token,
                 from_user_email : this.email,
                 from_user_cell : this.cell,
+                from_user_address : this.address,
+                note : this.note,
                 order     : JSON.stringify(store.state.currOrder),
                 total_price : store.state.totalPrice
             };
@@ -149,7 +180,7 @@ var v_confirm = new Vue( {
                     v.confirmFail = false;
                     setTimeout(function(){
                         window.location.replace('/');
-                        v.show_panel = 'normal'
+                        v.show_panel = 'normal';
                     }, 3000);
                 },
                 error: function(xhr) {
@@ -184,6 +215,7 @@ var v_login = new Vue( {
     },
     methods: {
         Register: function() {
+            var v = this;
             console.log("register")
             $.ajax({
                 url: server_url+"/register",
@@ -193,9 +225,8 @@ var v_login = new Vue( {
                 data: JSON.stringify({"username": this.signup_username_val, "password": this.signup_password_val, "email": this.signup_email_val}),
                 success: function(msg) {
                     v_login.err_reg = false;
-                    v_login.login_username_val = v_login.signup_username_val;
-                    v_login.login_password_val = v_login.signup_password_val;
-                    v_login.Login();
+                    store.commit("SetUser", {"username":v.signup_username_val, "token":msg['token']});
+                    window.location.replace('/');
                 },
                 error: function(xhr) {
                     v_login.err_reg = true;
@@ -204,6 +235,7 @@ var v_login = new Vue( {
             })
         },
         Login: function() {
+            console.log("login");
             $.ajax({
                 url: server_url+"/login",
                 method: "POST",
@@ -337,6 +369,17 @@ var v_nav = new Vue ( {
     methods : {
         ChangeContent: function(c) {
             v_main.currPage = c;
+            if (c == 'home') {
+                $('#home_ul > li').removeClass('active');
+                $('#home_ul > li').first().addClass('active');
+                v_main.post_category = '外卖';
+                v_main.GetPosts();
+            } else if (c == 'myOrder') {
+                $('#myorder_ul > li').removeClass('active');
+                $('#myorder_ul > li').first().addClass('active');
+                v_main.order_category = 'toMe';
+                v_main.GetOrders();
+            }
         }
     }
 });
@@ -348,6 +391,7 @@ var fake_posts = [
     {title: "post4", author:"author4", expire_time:"1", content:"alcd", items:[{"name":"item111", "price":1}, {"name":"item2241", "price":2.10}], is_display:false},
     {title: "post5", author:"author5", expire_time:"1", content:"abjd", items:[{"name":"item1", "price":12}, {"name":"item23", "price":2}], is_display:false}
 ];
+
 Vue.component ('v-items', {
     props: ['items', 'post'],
     data : function() {
@@ -428,33 +472,119 @@ Vue.component ('v-post', {
             })
         }
     }
-})
+});
+
+Vue.component ('v-order', {
+    props: ['order'],
+    data: function() {
+        return {
+            callback: null,
+            callback_data: {},
+            button_type: "btn-default"
+        }
+    },
+    computed: {
+        classObject: function() {
+            return {
+                'panel-danger': this.order.status=='cancel' || this.order.status=='unfinish' || this.order.status=='decline',
+                'panel-warning': this.order.status=='ready',
+                'panel-default': this.order.status=='finish',
+                'panel-success': this.order.status=='confirm'
+            }
+        },
+        statusText: function() {
+            if (this.order['status'] == 'ready') {
+                return '待确认';
+            } else if (this.order['status'] == 'cancel') {
+                return '已取消';
+            } else if (this.order['status'] == 'confirm') {
+                return '已确认';
+            } else if (this.order['status'] == 'decline') {
+                return '已拒绝';
+            } else if (this.order['status'] == 'finish') {
+                return '完成';
+            } else if (this.order['status'] == 'unfinish') {
+                return '未完成';
+            } else {
+                return '状态未知';
+            }
+        },
+        orderToMe: function() {
+            return store.state.username == this.order.to_user;
+        },
+        orderFromMe: function() {
+            return store.state.username == this.order.from_user;
+        },
+    },
+    methods: {
+        ToggleDisplay: function() {
+            v_main.ToggleDisplay(this.order);
+        },
+        Action: function(action) {
+            var v = this;
+            this.callback = function(data) {
+                $.ajax({
+                    url: server_url + '/requeststatus',
+                    method: 'POST',
+                    dataType: "json",
+                    contentType: 'application/json;charset=UTF-8',
+                    data: data,
+                    success: function(msg) {
+                        console.log(msg);
+                    }
+                })
+            };
+            this.callback_data = JSON.stringify({
+                id: v.order['id'],
+                username: store.state.username,
+                token: store.state.token,
+                status: action
+            });
+            if (action == 'decline' || action == 'cancel' || action == 'unfinish') {
+                this.button_type = "btn-danger";
+            } else if (action == 'confirm') {
+                this.button_type = 'btn-primary';
+            } else if (action == 'finish') {
+                this.button_type = 'btn-success';
+            } 
+            $('#orderConfirm').modal('show');
+        }
+    }
+});
+
 var v_main = new Vue( {
     el: '#main_content',
     data : {
         currPage: "home",
-        category: "外卖",
+        post_category: "外卖",
+        order_category: "toMe",
         firstPageNum: 1,
         lastPageNum: 5,
         currPageNum: 1,
         posts:[],
+        orders:[],
     },
     methods: {
-        ToggleDisplay: function(post) {
-            console.log(post)
-            if (post['is_display'] == false) {
-                for (var i = 0; i < this.$data.posts.length; i++) {
-                    this.$data.posts[i]['is_display'] = false;
+        ToggleDisplay: function(p) {
+            var pArr = [];
+            if (this.currPage == 'home') {
+                pArr = this.posts;
+            } else if (this.currPage == 'myOrder') {
+                pArr = this.orders;
+            }
+            if (p['is_display'] == false) {
+                for (var i = 0; i < pArr.length; i++) {
+                    pArr[i]['is_display'] = false;
                 }
-                post['is_display'] = true;
+                p['is_display'] = true;
             } else {
-                post['is_display'] = false;
+                p['is_display'] = false;
             }
         },
         GetPosts: function() {
             var v = this;
             v.posts = [];
-            if (v.category == '我的'){ 
+            if (v.post_category == '我的'){ 
                 store.dispatch('CheckTokenValid');
                 if (store.state.isLogin) {
                     ajax_url = server_url + '/getmypost';
@@ -468,7 +598,7 @@ var v_main = new Vue( {
             } else {
                 ajax_url = server_url + '/getpost'
                 ajax_data = {
-                    "category": v.category,
+                    "category": v.post_category,
                     "start": 10*(v.currPageNum - 1),
                     "end": 10*(v.currPageNum)
                 };
@@ -489,7 +619,36 @@ var v_main = new Vue( {
             })
         },
         GetOrders: function() {
-        
+            var v = this;
+            v.orders = [];
+            ajax_data = {
+                "username": store.state.username,
+                "token": store.state.token,
+                "start": 10*(v.currPageNum - 1),
+                "end": 10*(v.currPageNum),
+                "direction": v.order_category,
+            };
+            $.ajax({
+                url: server_url + '/getrequest',
+                method: 'POST',
+                dataType: "json",
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(ajax_data),
+                success: function(msg) {
+                    for (var i = 0; i < msg.length; i++) {
+                        msg[i].is_display = false;
+                        msg[i].order = JSON.parse(msg[i].order);
+                    }
+                    v.orders = JSON.parse(JSON.stringify(msg));
+                    for (var i = 0; i < v.orders.length; i++) {
+                        v.orders[i].order = JSON.parse(v.orders[i].order);
+                    }
+                    console.log(v.orders)
+                },
+                error: function(xhr) {
+                    console.log(xhr);
+                },
+            })
         },
         ChangePageNum: function(pageNum) {
             if (pageNum >= 1) {
@@ -501,7 +660,11 @@ var v_main = new Vue( {
                     this.firstPageNum = 1;
                     this.lastPageNum = 5;
                 }
-                this.GetPosts();
+                if (this.currPage == 'home') {
+                    this.GetPosts();
+                } else if (this.currPage == 'myOrder') {
+                    this.GetOrders();
+                }
             }
         },
     },
