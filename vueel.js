@@ -1,5 +1,5 @@
-//var server_url = "http://localhost:8000";
-var server_url = "https://fathomless-island-85775.herokuapp.com/";
+var server_url = "http://localhost:8000";
+//var server_url = "https://fathomless-island-85775.herokuapp.com/";
 const store = new Vuex.Store( {
     state : {
         isLogin: false,
@@ -422,31 +422,28 @@ var v_new_post = new Vue ( {
 
 var v_nav = new Vue ( {
     el: '#top_nav',
+    data: {
+        category: "外卖"
+    },
     methods : {
         ChangeContent: function(c) {
             v_main.currPage = c;
             if (c == 'home') {
                 $('#home_ul > li').removeClass('active');
                 $('#home_ul > li').first().addClass('active');
+                this.category = '外卖';
                 v_main.post_category = '外卖';
                 v_main.GetPosts();
             } else if (c == 'myOrder') {
                 $('#myorder_ul > li').removeClass('active');
                 $('#myorder_ul > li').first().addClass('active');
+                this.category = '向我求购'
                 v_main.order_category = 'toMe';
                 v_main.GetOrders();
             }
         }
     }
 });
-
-var fake_posts = [
-    {title: "post1", author:"author1", expire_time:"1", content:"abcd", items:[{"name":"item1", "price":1}, {"name":"item2", "price":2.2}], is_display:false},
-    {title: "post2", author:"author2", expire_time:"1", content:"ajcd", items:[{"name":"item11", "price":1.01}, {"name":"item21", "price":2.09}], is_display:false},
-    {title: "post3", author:"author3", expire_time:"1", content:"akcd", items:[{"name":"item1", "price":221}, {"name":"item2", "price":212}], is_display:false},
-    {title: "post4", author:"author4", expire_time:"1", content:"alcd", items:[{"name":"item111", "price":1}, {"name":"item2241", "price":2.10}], is_display:false},
-    {title: "post5", author:"author5", expire_time:"1", content:"abjd", items:[{"name":"item1", "price":12}, {"name":"item23", "price":2}], is_display:false}
-];
 
 Vue.component ('v-items', {
     props: ['items', 'post'],
@@ -770,6 +767,21 @@ var v_main = new Vue( {
                 } else if (this.currPage == 'myOrder') {
                     this.GetOrders();
                 }
+            }
+        },
+        ClickTab: function(category) {
+            if (this.currPage == 'home') {
+                this.post_category = category;
+                v_nav.category = category;
+                this.GetPosts();
+            } else if (this.currPage == 'myOrder') {
+                this.order_category = category;
+                if (category == "toMe") {
+                    v_nav.category = '向我求购';
+                } else if (category == 'fromMe') {
+                    v_nav.category = '我的购买';
+                }
+                this.GetOrders();
             }
         },
     },

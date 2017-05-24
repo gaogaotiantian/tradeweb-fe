@@ -14,7 +14,18 @@
   <div class="row">
     <div class="col">
       <nav class="navbar navbar-default" id="top_nav">
-        <div class="collapse navbar-collapse">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#header-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#side-collapse" v-if="category != ''">
+            {{category}}
+          </button>
+        </div> 
+        <div class="collapse navbar-collapse" id="header-collapse">
           <ul class="nav navbar-nav">
             <li><a href="#" v-on:click="ChangeContent('home')">首页</a></li>
             <li><a href="#" v-on:click="ChangeContent('myOrder')">我的订单</a></li>
@@ -42,18 +53,20 @@
     <div>
       <div class="row">
         <div class="col-md-2">
-          <nav class="nav-sidebar">
-            <ul id="home_ul" v-show="currPage == 'home'" class="nav nav-pills nav-stacked">
-              <li class="active"><a href="#tab_waimai" data-toggle="tab" @click="post_category='外卖';GetPosts()">外卖</a></li>
-              <li><a href="#tab_jiaju" data-toggle="tab" @click="post_category='家具';GetPosts()">家具</a></li>
-              <li><a href="#tab_pinche" data-toggle="tab" @click="post_category='拼车';GetPosts()">拼车</a></li>
-              <li><a href="#tab_wode" data-toggle="tab" @click="post_category='我的';GetPosts()">我的</a></li>
-            </ul>
-            <ul id="myorder_ul" v-show="currPage == 'myOrder' && isLogin" class="nav nav-pills nav-stacked">
-              <li class="active"><a href="#tab_tome" data-toggle="tab" @click="order_category='toMe';GetOrders()">向我求购</a></li>
-              <li><a href="#tab_fromme" data-toggle="tab" @click="order_category='fromMe';GetOrders()">我的购买</a></li>
-            </ul>
-          </nav>
+          <div class="row collapse navbar-collapse" id="side-collapse">
+            <nav class="nav-sidebar">
+              <ul id="home_ul" v-show="currPage == 'home'" class="nav nav-pills nav-stacked">
+                <li class="active"><a href="#tab_waimai" data-toggle="tab" @click="ClickTab('外卖')">外卖</a></li>
+                <li><a href="#tab_jiaju" data-toggle="tab" @click="ClickTab('家具')">家具</a></li>
+                <li><a href="#tab_pinche" data-toggle="tab" @click="ClickTab('拼车')">拼车</a></li>
+                <li><a href="#tab_wode" data-toggle="tab" @click="ClickTab('我的')">我的</a></li>
+              </ul>
+              <ul id="myorder_ul" v-show="currPage == 'myOrder' && isLogin" class="nav nav-pills nav-stacked">
+                <li class="active"><a href="#tab_tome" data-toggle="tab" @click="ClickTab('toMe')">向我求购</a></li>
+                <li><a href="#tab_fromme" data-toggle="tab" @click="ClickTab('fromMe')">我的购买</a></li>
+              </ul>
+            </nav>
+          </div>
         </div>
         <div id="posts_div" class="col-md-10">
           <div class="row" v-for="post in posts" v-if="currPage == 'home'">
@@ -61,14 +74,14 @@
               <v-post :post="post" inline-template>
                 <div class="panel" v-bind:class="{'panel-default':!deletePost, 'panel-danger':deletePost}">
                   <div class="panel-heading" v-on:click="ToggleDisplay(post)">
-                    <div class="row" style="display:flex; align-items:baseline">
-                      <div class="col-md-8">
+                    <div class="row flex-end-row">
+                      <div class="col-md-8 col-xs-12">
                         <h3>{{post.title}}</h3>
                       </div>
-                      <div class="col-md-2" v-if="!post['is_deleted'] && !deleteConfirm">
+                      <div class="col-md-3 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
                         <span>by {{post.author}}, {{post.timeago}}</span>
                       </div>
-                      <div class="col-md-2" v-if="!post['is_deleted'] && !deleteConfirm">
+                      <div class="col-md-1 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
                         <button class="btn btn-danger pull-right" v-if="IsAuthorMe" @click.stop="deleteConfirm=true">删除</button>
                       </div>
                       <div class="col-md-4" v-if="!post['is_deleted'] && deleteConfirm">
@@ -82,23 +95,24 @@
                   </div>
                   <div class="panel-body" v-if="post['is_display']">
                     <div class="row">
-                      <div class="col-md-6">
+                      <div class="col-md-6 col-xs-12">
                         <p class="multiline-content">{{post.content}}</p>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-md-6 col-xs-12">
                         <v-items ref="v_items" inline-template :items="post.items" :post="post">
                           <div class="item_wrapper_div">
                           <form class="form-horizontal">
                             <div class="item_div form-group" style="vertical-align:center" v-for="item in items">
-                              <label class="col-md-4 item_name control-label">{{item["name"]}}</label>
-                              <label class="col-md-4 item_price control-label">${{item["price"]}}</label>
-                              <div class="col-md-3 input-group" v-bind:class="{'has-error':parseInt(order[item['name']][1]) > parseInt(post['availability'][item['name']])}">
+                              <label class="col-md-4 col-xs-4 item_name control-label">{{item["name"]}}</label>
+                              <label class="col-md-4 col-xs-3 item_price control-label">${{item["price"]}}</label>
+                              <div class="col-md-3 col-xs-4 input-group" v-bind:class="{'has-error':parseInt(order[item['name']][1]) > parseInt(post['availability'][item['name']])}">
                                 <input class="item_number form-control input-sm" type=number v-model="order[item['name']][1]">
-                                <span class="input-group-addon">/ {{post["availability"][item["name"]]}}</span>
+                                <span class="input-group-addon" v-if="post['availability'][item['name']]!=undefined">/ {{post["availability"][item["name"]]}}</span>
+                                <span class="input-group-addon" v-else>/ ∞</span>
                               </div>
                             </div>
                             <div class="item_total_div form-group">
-                              <div class="col-md-offset-9">
+                              <div class="col-md-offset-9 col-xs-offset-7">
                                 <label>总价：{{totalPrice}}</label>
                               </div>
                             </div>
@@ -123,33 +137,35 @@
               <v-order :order="order" inline-template>
                 <div class="panel" v-bind:class="classObject">
                   <div class="panel-heading" @click="ToggleDisplay(order)">
-                    <div class="row" style="display:flex; align-items:baseline">
-                      <div class="col-md-8">
+                    <div class="row flex-end-row">
+                      <div class="col-md-8 col-xs-12">
                         <h3>{{order.title}}</3>
                       </div>
-                      <div class="col-md-2">
+                      <div class="col-md-3 col-xs-8">
                         by {{order.to_user}}, {{order.timeago}}
                       </div>
-                      <div class="col-md-2">
+                      <div class="col-md-1 col-xs-4">
                         {{statusText}}
                       </div>
                     </div>
                   </div>
                   <div class="panel-body" v-show="order['is_display']">
                     <div class="row">
-                      <div class="col-md-6">
+                      <div class="col-md-6 col-xs-12">
                         <div class="row" v-for='orderContent, orderName in order.order'>
                           <form>
-                            <label class="col-md-4 control-label">{{orderName}}</label>
-                            <label class="col-md-4 control-label">${{orderContent[0]}}</label>
-                            <label class="col-md-4 control-label">x{{orderContent[1]}}</label>
+                            <label class="col-md-4 col-xs-6 control-label">{{orderName}}</label>
+                            <label class="col-md-4 col-xs-3 control-label">${{orderContent[0]}}</label>
+                            <label class="col-md-4 col-xs-3 control-label">x{{orderContent[1]}}</label>
                           </form>
                         </div>
                         <div class="row">
-                          {{order.note}}
+                          <div class="col-md-12">
+                            {{order.note}}
+                          </div>
                         </div>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-md-6 col-xs-11 col-xs-offset-1">
                         <address>
                         <div class="row">
                           {{order.from_user}}
@@ -351,38 +367,38 @@
           <label for="new_post_title"></label>
           <form @submit.prevent="SubmitPost">
             <div class="row">
-              <div class="col-md-2">
+              <div class="col-md-2 col-xs-4">
                 <select required="" class="form-control pull-right" v-model="category">
                   <option>外卖</option>
                   <option>家具</option>
                   <option>拼车</option>
                 </select>
               </div>
-              <div class="col-md-10">
+              <div class="col-md-10 col-xs-8">
                 <input type="text" class="form-control" id="new_post_title" required="" placeholder="起一个吸引人的标题！" v-model="title">
               </div>
             </div>
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-6 col-xs-12">
                 <label for="new_post_content"></label>
                 <textarea rows="10" class="form-control" id="new_post_content" required="" placeholder="简单介绍一下你的东西吧！" v-model="content"></textarea>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-6 col-xs-12">
                 <label></label>
                 <div class="row" v-for="i in max_item_num">
-                  <div class="col-md-5">
+                  <div class="col-md-5 col-xs-5">
                     <input type="text" class="form-control" placeholder="物品" v-model="items[i-1]">
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-3 col-xs-3">
                     <input type="number" class="form-control" placeholder="限量" v-model="avai[i-1]">
                   </div>
-                  <div class="col-md-3 input-group" v-bind:class="{'has-error':errors[i-1]}">
+                  <div class="col-md-3 col-xs-3 input-group" v-bind:class="{'has-error':errors[i-1]}">
                     <span class="input-group-addon">$</span>
                     <input type="number" step=0.01 class="form-control" placeholder="价格" v-model="prices[i-1]">
                   </div>
                 </div>
                 <div class="row">
-                  <div class="col-md-12 text-center">
+                  <div class="col-md-12 col-xs-12 text-center">
                     <label></label>
                     <button type="button" class="btn btn-default" @click="RemoveLine()"><span class="glyphicon glyphicon-minus"></span></button>
                     <button type="button" class="btn btn-default" @click="AddLine()"><span class="glyphicon glyphicon-plus"></span></button>
