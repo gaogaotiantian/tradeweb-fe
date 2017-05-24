@@ -4,6 +4,9 @@ const store = new Vuex.Store( {
         isLogin: false,
         username: '',
         token: '',
+        email: '',
+        cell: '',
+        address: '',
         currOrder: {},
         orderPost: {},
         totalPrice: 0
@@ -32,6 +35,10 @@ const store = new Vuex.Store( {
                 localStorage.token = state.token;
             }
         },
+        SetInfo(state, data) {
+            state.email = data['email'];
+            state.cell = data['cell'];
+        },
         ClearUser(state) {
             state.isLogin = false;
             state.username = "";
@@ -52,6 +59,23 @@ const store = new Vuex.Store( {
                 data: JSON.stringify({"username": state.username, "token":state.token}),
                 success: function(msg) {
                     commit('SetLogin', true);
+                },
+                error: function(msg) {
+                    commit('ClearUser');
+                }
+            })
+        },
+        UpdateUserInfo({commit, state}) {
+            $.ajax( {
+                url: server_url+"/myinfo",
+                method: "POST",
+                dataType: "json",
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({"username": state.username, "token":state.token}),
+                success: function(msg) {
+                    commit('SetInfo', {"email": msg["email"], "cell": msg["cell"]});
+                    v_confirm.email = msg["email"];
+                    v_confirm.cell = msg["cell"];
                 },
                 error: function(msg) {
                     commit('ClearUser');
@@ -84,12 +108,15 @@ Vue.component('action-confirm-modal', {
             <div class="modal-head text-center">
             </div>
             <div class="modal-body">
+              {{info}}
+            </div>
+            <div class="modal-foot">
               <div class="row">
                 <div class="col-md-12">
                   <div class="row pull-right">
                     <div class="col-md-12">
                       <button class="btn btn-default" data-dismiss="modal">取消操作</button>
-                      <button class="btn" v-bind:class="button_type" @click="callback(callback-data)">确认操作</button>
+                      <button class="btn" v-bind:class="[button_type]" @click="callback(callback_data)">确认操作</button>
                     </div>
                   </div>
                 </div>
@@ -99,7 +126,7 @@ Vue.component('action-confirm-modal', {
         </div>
       </div>
     `,
-    props: ['callback', 'callback_data', 'id', 'button_type'],
+    props: ['callback', 'callback_data', 'id', 'button_type', 'info'],
     
 });
 
@@ -168,7 +195,6 @@ var v_confirm = new Vue( {
                 order     : JSON.stringify(store.state.currOrder),
                 total_price : store.state.totalPrice
             };
-            console.log(ajax_data);
             $.ajax({
                 url: server_url+"/request",
                 method: "POST",
@@ -188,9 +214,8 @@ var v_confirm = new Vue( {
                     v.err_msg = JSON.parse(xhr['responseText'])["msg"];
                 }
             })
-
         }
-    }
+    },
 });
 
 var v_login = new Vue( {
@@ -301,6 +326,7 @@ var v_new_post = new Vue ( {
         max_item_num : 6,
         items: [],
         prices: [],
+        avai: [],
         show_panel: "normal",
         err_msg: ""
     },
@@ -321,38 +347,62 @@ var v_new_post = new Vue ( {
                 }
             }
             return temp_items;
+        },
+        availability : function() {
+            var temp_avai = {};
+            for (var i = 0; i < this.max_item_num; i++) {
+                if (this.items[i] != "" && this.prices[i] != "" && this.avai[i] != "") {
+                    temp_avai[this.items[i]] = parseInt(this.avai[i]);
+                }
+            }
+            return temp_avai
         }
     },
     methods: {
         SubmitPost: function() {
+            console.log('submit')
             store.dispatch('CheckTokenValid');
             if (store.state.isLogin) {
+                var v = this;
                 $.ajax( {
                     url: server_url + '/post',
                     method: 'POST',
                     dataType: "json",
                     contentType: 'application/json;charset=UTF-8',
                     data: JSON.stringify({
-                        "category":v_new_post.category,
-                        "title":v_new_post.title,
+                        "category":v.category,
+                        "title":v.title,
                         "author":store.state.username,
                         "token":store.state.token,
-                        "content":v_new_post.content,
-                        "items":v_new_post.valid_items,
+                        "content":v.content,
+                        "items":v.valid_items,
+                        "availability":v.availability,
                         "expire_time":86400
                     }),
                     success: function(msg) {
-                        v_new_post.show_panel = 'success';
-                        v_new_post.err_msg = "";
+                        v.show_panel = 'success';
+                        v.err_msg = "";
                         setTimeout(function(){
                             window.location.replace('/');
-                            v_new_post.show_panel = 'normal'
+                            v.show_panel = 'normal'
                         }, 3000);
                     },
                     error: function(xhr) {
-                        v_new_post.err_msg = JSON.parse(xhr["responseText"])["msg"];
+                        v.err_msg = JSON.parse(xhr["responseText"])["msg"];
                     }
                 });
+            }
+        },
+        AddLine: function() {
+            this.max_item_num += 1;
+            this.items.push("");
+            this.prices.push("");
+        },
+        RemoveLine: function() {
+            if (this.max_item_num > 0) {
+                this.max_item_num -= 1;
+                this.items.pop();
+                this.prices.pop();
             }
         }
     },
@@ -405,17 +455,17 @@ Vue.component ('v-items', {
     },
     computed : {
         totalPrice: function() {
-            price = 0;
+            var price = 0;
             for (idx in this.items) {
-                item = this.items[idx];
-                if (this.order[item['name']][1] == '') {
+                var it = this.items[idx];
+                if (this.order[it['name']][1] == '') {
                     num = 0;
                 } else {
-                    num = parseInt(this.order[item['name']][1]);
+                    num = parseInt(this.order[it['name']][1]);
                     if (isNaN(num)) {
                         return ""
                     }
-                    price += parseFloat(item['price']) * parseInt(this.order[item['name']][1]);
+                    price += parseFloat(it['price']) * parseInt(this.order[it['name']][1]);
                 }
             }
             return price.toFixed(2);
@@ -424,6 +474,7 @@ Vue.component ('v-items', {
     methods : {
         SubmitOrder: function() {
             store.commit('SetOrder', [this.order, this.totalPrice, this.post]);
+            store.dispatch('UpdateUserInfo');
         }
     } 
 });
@@ -441,16 +492,23 @@ Vue.component ('v-post', {
                 return true;
             }
             return false;
-        }
-    },
-    methods: {
-        IsAuthorMe: function(author) {
+        },
+        IsAuthorMe: function() {
             if (store) {
-                return author == store.state.username;
+                return this.post.author == store.state.username;
             } else {
                 return false;
             }
         },
+        IsLogin: function() {
+            if (store) {
+                return store.state.isLogin;
+            } else {
+                return false;
+            }
+        }
+    },
+    methods: {
         ToggleDisplay: function() {
             v_main.ToggleDisplay(this.post);
         },
@@ -470,6 +528,9 @@ Vue.component ('v-post', {
                     window.location.replace('/');
                 }
             })
+        },
+        SubmitOrder: function() {
+            this.$refs.v_items[0].SubmitOrder();
         }
     }
 });
@@ -478,6 +539,7 @@ Vue.component ('v-order', {
     props: ['order'],
     data: function() {
         return {
+            info: "",
             callback: null,
             callback_data: {},
             button_type: "btn-default"
@@ -531,6 +593,11 @@ Vue.component ('v-order', {
                     data: data,
                     success: function(msg) {
                         console.log(msg);
+                        $('#orderConfirm').modal('hide');
+                        window.location.replace('/');
+                    },
+                    error: function(xhr) {
+                        console.log(xhr);
                     }
                 })
             };
@@ -563,6 +630,15 @@ var v_main = new Vue( {
         currPageNum: 1,
         posts:[],
         orders:[],
+    },
+    computed: {
+        isLogin: function() {
+            if (store && store.state) {
+                return store.state.isLogin;
+            } else {
+                return false;
+            }
+        }
     },
     methods: {
         ToggleDisplay: function(p) {
@@ -607,10 +683,10 @@ var v_main = new Vue( {
                 url: ajax_url,
                 method: 'POST',
                 dataType: "json",
+                cache: false,
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify(ajax_data),
                 success: function(msg) {
-                    console.log(msg);
                     for (var i = 0; i < msg.length; i++) {
                         msg[i].is_display = false;
                     }

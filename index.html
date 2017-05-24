@@ -48,7 +48,7 @@
               <li><a href="#tab_pinche" data-toggle="tab" @click="post_category='拼车';GetPosts()">拼车</a></li>
               <li><a href="#tab_wode" data-toggle="tab" @click="post_category='我的';GetPosts()">我的</a></li>
             </ul>
-            <ul id="myorder_ul" v-show="currPage == 'myOrder'" class="nav nav-pills nav-stacked">
+            <ul id="myorder_ul" v-show="currPage == 'myOrder' && isLogin" class="nav nav-pills nav-stacked">
               <li class="active"><a href="#tab_tome" data-toggle="tab" @click="order_category='toMe';GetOrders()">向我求购</a></li>
               <li><a href="#tab_fromme" data-toggle="tab" @click="order_category='fromMe';GetOrders()">我的购买</a></li>
             </ul>
@@ -68,7 +68,7 @@
                         <span>by {{post.author}}</span>
                       </div>
                       <div class="col-md-2" v-if="!post['is_deleted'] && !deleteConfirm">
-                        <button class="btn btn-danger pull-right" v-if="IsAuthorMe(post.author)" @click.stop="deleteConfirm=true">删除</button>
+                        <button class="btn btn-danger pull-right" v-if="IsAuthorMe" @click.stop="deleteConfirm=true">删除</button>
                       </div>
                       <div class="col-md-4" v-if="!post['is_deleted'] && deleteConfirm">
                         <button class="btn btn-danger" @click.stop="deleteConfirm=false;DeletePost()">确认删除</button>
@@ -82,10 +82,10 @@
                   <div class="panel-body" v-if="post['is_display']">
                     <div class="row">
                       <div class="col-md-6">
-                        <p>{{post.content}}</p>
+                        <p class="multiline-content">{{post.content}}</p>
                       </div>
                       <div class="col-md-6">
-                        <v-items inline-template :items="post.items" :post="post">
+                        <v-items ref="v_items" inline-template :items="post.items" :post="post">
                           <div class="item_wrapper_div">
                           <form class="form-horizontal">
                             <div class="item_div form-group" style="vertical-align:center" v-for="item in items">
@@ -100,14 +100,15 @@
                                 <label>总价：{{totalPrice}}</label>
                               </div>
                             </div>
-                            <div class="form-group pull-right">
-                              <div class="col-md-12">
-                                <button class="btn btn-success" data-toggle="modal" data-target="#confirm_modal" @click="SubmitOrder()" type="button">下单</button>
-                              </div>
-                            </div>
                           </form>
                           </div>
                         </v-items>
+                      </div>
+                    </div>
+                    <div class="form-group pull-right">
+                      <div class="col-md-12">
+                        <button class="btn btn-success" data-toggle="modal" data-target="#confirm_modal" @click="SubmitOrder()" type="button" v-if="IsLogin && !IsAuthorMe">下单</button>
+                        <button class="btn btn-success" data-toggle="modal" data-target="#login_modal" type="button" v-if="!IsLogin">登录后下单</button>
                       </div>
                     </div>
                   </div>
@@ -115,7 +116,7 @@
               </v-post>
             </div>
           </div>
-          <div class="row" v-for="order in orders" v-if="currPage=='myOrder'">
+          <div class="row" v-for="order in orders" v-if="currPage=='myOrder' && isLogin">
             <div class="col-md-12">
               <v-order :order="order" inline-template>
                 <div class="panel" v-bind:class="classObject">
@@ -147,6 +148,7 @@
                         </div>
                       </div>
                       <div class="col-md-6">
+                        <address>
                         <div class="row">
                           {{order.from_user}}
                         </div>
@@ -159,27 +161,28 @@
                         <div class="row">
                           {{order.from_user_address}}
                         </div>
+                        </address>
                       </div>
                     </div>
                     <div class="row pull-right" v-if="orderToMe && order.status=='ready'">
                       <div class="col-md-12">
-                        <button class="btn btn-danger" @click="Action('decline')">拒绝订单</button>
-                        <button class="btn btn-primary" @click="Action('confirm')">确认订单</button>
+                        <button class="btn btn-danger" @click="Action('decline');info='确定要拒绝订单么？'">拒绝订单</button>
+                        <button class="btn btn-primary" @click="Action('confirm');info='确定要确认订单么？'">确认订单</button>
                       </div>
                     </div>
                     <div class="row pull-right" v-if="orderFromMe && order.status=='ready'">
                       <div class="col-md-12">
-                        <button class="btn btn-danger" @click="Action('cancel')">取消订单</button>
+                        <button class="btn btn-danger" @click="Action('cancel');info='确定要取消订单么？'">取消订单</button>
                       </div>
                     </div>
                     <div class="row pull-right" v-if="orderFromMe && order.status=='confirm'">
                       <div class="col-md-12">
-                        <button class="btn btn-danger" @click="Action('unfinish')">交易失败</button>
-                        <button class="btn btn-success" @click="Action('finish')">交易完成</button>
+                        <button class="btn btn-danger" @click="Action('unfinish');info='确定交易失败了么？'">交易失败</button>
+                        <button class="btn btn-success" @click="Action('finish');info='确定交易完成了么？'">交易完成</button>
                       </div>
                     </div>
                   </div>
-                  <action-confirm-modal :callback="callback" :callback_data="callback_data" :id="'orderConfirm'" :button_type="button_type">
+                  <action-confirm-modal :callback="callback" :callback_data="callback_data" :id="'orderConfirm'" :button_type="button_type" :info="info">
                   </action-confirm-modal>
                 </div>
               </v-order>
@@ -187,7 +190,12 @@
           </div>
         </div>
       </div>
-      <div class="row" v-if="currPage == 'home' || currPage == 'myOrder'">
+      <div class="row" v-if="currPage == 'myOrder' && !isLogin">
+        <div class="col-md-12">
+          您需要登录来进行这个操作！
+        </div>
+      </div>
+      <div class="row" v-if="currPage == 'home' || (currPage == 'myOrder' && isLogin)">
         <div class="col">
         <!-- foot page -->
           <div>
@@ -203,7 +211,16 @@
       </div>
     </div>
     <div v-if="currPage == 'about'">
-      about
+      <div class="row">
+        <div class="col-md-12">
+          这个网站的初衷是服务留学生群体，给大家一个更加方便的工具进行小的买卖。
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+        如果对本网站有任何问题，意见或建议，请联系<a href="mailto:gaogaotiantian@hotmail.com">gaogaotiantian@hotmail.com</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -344,24 +361,35 @@
               </div>
             </div>
             <div class="row">
-              <div class="col-md-8">
+              <div class="col-md-6">
                 <label for="new_post_content"></label>
                 <textarea rows="10" class="form-control" id="new_post_content" required="" placeholder="简单介绍一下你的东西吧！" v-model="content"></textarea>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label></label>
                 <div class="row" v-for="i in max_item_num">
-                  <div class="col-md-7">
+                  <div class="col-md-5">
                     <input type="text" class="form-control" placeholder="物品" v-model="items[i-1]">
                   </div>
-                  <div class="col-md-4 input-group" v-bind:class="{'has-error':errors[i-1]}">
+                  <div class="col-md-3">
+                    <input type="number" class="form-control" placeholder="限量" v-model="avai[i-1]">
+                  </div>
+                  <div class="col-md-3 input-group" v-bind:class="{'has-error':errors[i-1]}">
                     <span class="input-group-addon">$</span>
                     <input type="number" step=0.01 class="form-control" placeholder="价格" v-model="prices[i-1]">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-12 text-center">
+                    <label></label>
+                    <button type="button" class="btn btn-default" @click="RemoveLine()"><span class="glyphicon glyphicon-minus"></span></button>
+                    <button type="button" class="btn btn-default" @click="AddLine()"><span class="glyphicon glyphicon-plus"></span></button>
                   </div>
                 </div>
               </div>
             </div>
             <div class="row">
+              <label></label>
               <div class="control-group">
                 <label class="control-label"></label>
                 <div class="alert alert-danger" role="alert" v-if="err_msg != ''">
