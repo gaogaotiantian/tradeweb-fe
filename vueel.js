@@ -1,4 +1,5 @@
-var server_url = "http://localhost:8000";
+//var server_url = "http://localhost:8000";
+var server_url = "https://fathomless-island-85775.herokuapp.com/";
 const store = new Vuex.Store( {
     state : {
         isLogin: false,
@@ -58,7 +59,12 @@ const store = new Vuex.Store( {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify({"username": state.username, "token":state.token}),
                 success: function(msg) {
-                    commit('SetLogin', true);
+                    if (msg['valid'] == true) {
+                        commit('SetLogin', true);
+                    } else {
+                        commit('ClearUser');
+                    }
+                    
                 },
                 error: function(msg) {
                     commit('ClearUser');
@@ -192,7 +198,7 @@ var v_confirm = new Vue( {
                 from_user_cell : this.cell,
                 from_user_address : this.address,
                 note : this.note,
-                order     : JSON.stringify(store.state.currOrder),
+                order     : store.state.currOrder,
                 total_price : store.state.totalPrice
             };
             $.ajax({
@@ -450,7 +456,8 @@ Vue.component ('v-items', {
             orderVal[this.items[idx]['name']] = [this.items[idx]['price'], 0];
         }
         return {
-            order: orderVal
+            order: orderVal,
+            has_error: true,
         };
     },
     computed : {
@@ -469,12 +476,33 @@ Vue.component ('v-items', {
                 }
             }
             return price.toFixed(2);
+        },
+        totalPiece: function() {
+            var piece = 0;
+            for (idx in this.items) {
+                var it = this.items[idx];
+                if (this.order[it['name']][1] != '') {
+                    piece += parseInt(this.order[it['name']][1]);
+                }
+            }
+            return piece;
+
         }
     },
     methods : {
         SubmitOrder: function() {
             store.commit('SetOrder', [this.order, this.totalPrice, this.post]);
             store.dispatch('UpdateUserInfo');
+        },
+        OrderValid: function() {
+            for (name in this.order) {
+                if (parseInt(this.order[name][1]) > parseInt(this.post['availability'][name])) {
+                    return false;
+                }
+            }
+            if (this.totalPiece == 0)
+                return false;
+            return true;
         }
     } 
 });
@@ -483,7 +511,8 @@ Vue.component ('v-post', {
     props: ['post'],
     data : function() {
         return {
-            deleteConfirm : false
+            deleteConfirm : false,
+            orderValid : false,
         }
     },
     computed: {
@@ -506,7 +535,7 @@ Vue.component ('v-post', {
             } else {
                 return false;
             }
-        }
+        },
     },
     methods: {
         ToggleDisplay: function() {
@@ -530,8 +559,11 @@ Vue.component ('v-post', {
             })
         },
         SubmitOrder: function() {
-            this.$refs.v_items[0].SubmitOrder();
-        }
+            if (this.$refs.v_items[0].OrderValid()) {
+                this.$refs.v_items[0].SubmitOrder();
+                $('#confirm_modal').modal('toggle');
+            }
+        },
     }
 });
 
@@ -716,9 +748,6 @@ var v_main = new Vue( {
                         msg[i].order = JSON.parse(msg[i].order);
                     }
                     v.orders = JSON.parse(JSON.stringify(msg));
-                    for (var i = 0; i < v.orders.length; i++) {
-                        v.orders[i].order = JSON.parse(v.orders[i].order);
-                    }
                     console.log(v.orders)
                 },
                 error: function(xhr) {
