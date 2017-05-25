@@ -76,10 +76,10 @@
                   <div class="panel-heading" v-on:click="ToggleDisplay(post)">
                     <div class="row flex-end-row">
                       <div class="col-md-8 col-xs-12">
-                        <h3>{{post.title}}</h3>
+                        <h4>{{post.title}}</h4>
                       </div>
                       <div class="col-md-3 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
-                        <span>by {{post.author}}, {{post.timeago}}</span>
+                        <span>{{post.author}}, {{post.timeago}}</span>
                       </div>
                       <div class="col-md-1 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
                         <button class="btn btn-danger pull-right" v-if="IsAuthorMe" @click.stop="deleteConfirm=true">删除</button>
@@ -142,7 +142,7 @@
                         <h3>{{order.title}}</3>
                       </div>
                       <div class="col-md-3 col-xs-8">
-                        by {{order.to_user}}, {{order.timeago}}
+                        {{order.to_user}}, {{order.timeago}}
                       </div>
                       <div class="col-md-1 col-xs-4">
                         {{statusText}}
