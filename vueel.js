@@ -10,7 +10,8 @@ const store = new Vuex.Store( {
         address: '',
         currOrder: {},
         orderPost: {},
-        totalPrice: 0
+        totalPrice: 0,
+        checkusername: ""
     },
     mutations: {
         SetOrder (state, data) {
@@ -36,9 +37,13 @@ const store = new Vuex.Store( {
                 localStorage.token = state.token;
             }
         },
+        SetCheckUserName(state, data) {
+            state.checkusername = data['username'];
+        },
         SetInfo(state, data) {
             state.email = data['email'];
             state.cell = data['cell'];
+            state.address = data['address'];
         },
         ClearUser(state) {
             state.isLogin = false;
@@ -79,9 +84,10 @@ const store = new Vuex.Store( {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify({"username": state.username, "token":state.token}),
                 success: function(msg) {
-                    commit('SetInfo', {"email": msg["email"], "cell": msg["cell"]});
+                    commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
                     v_confirm.email = msg["email"];
                     v_confirm.cell = msg["cell"];
+                    v_confirm.address = msg["address"];
                 },
                 error: function(msg) {
                     commit('ClearUser');
@@ -445,6 +451,100 @@ var v_nav = new Vue ( {
     }
 });
 
+Vue.component('v-profile-bulletin', {
+    template: `
+        <div v-if="error == ''">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <b>{{username}}</b>
+            </div>
+            <div class="panel-body">
+              <p>学分：{{grade}}</p>
+              <p>销售成功：{{good_sell}}</p>
+              <p>销售失败：{{bad_sell}}</p>
+              <p>购买成功：{{good_purchase}}</p>
+              <p>购买失败：{{bad_purchase}}</p>
+            </div>
+          </div>
+        </div>
+        <div v-else>
+            <p>无法找到用户资料</p>
+        </div>
+    `,
+    props: ["username"],
+    data: function() {
+        return {
+            grade: "0",
+            good_sell: "0",
+            bad_sell: "0",
+            good_purchase: "0",
+            bad_purchase: "0",
+            error : "",
+        };
+    },
+    methods: {
+        Update: function() {
+            var v = this;
+            $.ajax({
+                url: server_url + '/userinfo',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    username: this.username,
+                }),
+                success: function(msg) {
+                    v.grade = msg['grades'];
+                    v.good_sell = msg['good_sell'];
+                    v.bad_sell = msg['bad_sell'];
+                    v.good_purchase = msg['good_purchase'];
+                    v.bad_purchase = msg['bad_purchase'];
+                    v.error = "";
+                },
+                error: function(xhr) {
+                    v.error = xhr['responseJSON']["msg"];
+                }
+            })
+        }
+    },
+    watch: {
+        username: function() {
+            this.Update();
+        }
+    },
+    mounted() {
+        this.Update();
+    }
+})
+
+var v_userinfo = new Vue( {
+    el: '#userinfo_modal',
+    computed: {
+        username: function() {
+            if (store) {
+                return store.state.checkusername;
+            } else {
+                return "";
+            }
+        }
+    }
+    
+})
+
+Vue.component('v-usertag', {
+    template: `
+        <a role="button" @click.stop="OnClick()">{{username}}</a>
+    `,
+    props: ["username"],
+    methods: {
+        OnClick: function() {
+            store.commit('SetCheckUserName', {'username':this.username});
+            $('#userinfo_modal').modal('toggle');
+        }
+    }
+})
+
 Vue.component ('v-items', {
     props: ['items', 'post'],
     data : function() {
@@ -647,6 +747,93 @@ Vue.component ('v-order', {
         }
     }
 });
+Vue.component('v-profile', {
+    data : function() {
+        if (store) {
+            var uname = store.state.username;
+        } else {
+            var uname = "";
+        }
+        return {
+            old_password: "",
+            new_password: "",
+            new_password_again: "",
+            password_err_msg: "",
+            password_success_msg: "",
+            email: "",
+            cell: "",
+            address: "",
+            grades: "",
+            good_sell: "",
+            bad_sell: "",
+            good_purchase: "",
+            bad_purchase: "",
+            info_err_msg: "",
+            info_success_msg: "",
+            username: uname,
+        };
+    },
+    methods : {
+        ChangePassword: function() {
+            var v = this;
+            if (this.new_password != this.new_password_again) {
+                this.password_err_msg = "两次输入密码需一致！";
+            } else {
+                this.password_err_msg = "";
+            }
+            $.ajax({
+                url: server_url + '/changepassword',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    username: store.state.username,
+                    old_password: v.old_password,
+                    new_password: v.new_password,
+                    new_password_again: v.new_password_again
+                }),
+                success: function(msg) {
+                    v.old_password = v.new_password = v.new_password_again = "";
+                    v.password_success_msg = "修改密码成功!"
+                },
+                error: function(xhr) {
+                    console.log(xhr['responseJSON']["msg"])
+                    v.password_err_msg = xhr['responseJSON']["msg"];
+                }
+            })
+        },
+        UpdateInfo: function() {
+            var v = this;
+            $.ajax({
+                url: server_url + '/updateinfo',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    username: store.state.username,
+                    token: store.state.token,
+                    email: v.email,
+                    cell: v.cell,
+                    address: v.address
+                }),
+                success: function(msg) {
+                    v.info_success_msg = "修改资料成功!";
+                    store.dispatch("UpdateUserInfo");
+                },
+                error: function(xhr) {
+                    v.info_err_msg = xhr['responseJSON']["msg"];
+                }
+            })
+        }
+    },
+    mounted() {
+        this.email = store.state.email;
+        this.cell = store.state.cell;
+        this.address = store.state.address;
+    }
+});
 
 var v_main = new Vue( {
     el: '#main_content',
@@ -786,6 +973,7 @@ var v_main = new Vue( {
         },
     },
     mounted() {
+        store.dispatch('UpdateUserInfo');
         this.GetPosts();
     }
 });
