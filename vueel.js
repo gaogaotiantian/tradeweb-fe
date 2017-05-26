@@ -1,5 +1,5 @@
-//var server_url = "http://localhost:8000";
-var server_url = "https://fathomless-island-85775.herokuapp.com/";
+var server_url = "http://localhost:8000";
+//var server_url = "https://fathomless-island-85775.herokuapp.com/";
 const store = new Vuex.Store( {
     state : {
         isLogin: false,
@@ -11,6 +11,8 @@ const store = new Vuex.Store( {
         currOrder: {},
         orderPost: {},
         totalPrice: 0,
+        level: 0,
+        cards: {},
         checkusername: ""
     },
     mutations: {
@@ -44,6 +46,12 @@ const store = new Vuex.Store( {
             state.email = data['email'];
             state.cell = data['cell'];
             state.address = data['address'];
+        },
+        SetLevel(state, data) {
+            state.level = data;
+        },
+        SetCards(state, data) {
+            state.cards = data;
         },
         ClearUser(state) {
             state.isLogin = false;
@@ -85,6 +93,8 @@ const store = new Vuex.Store( {
                 data: JSON.stringify({"username": state.username, "token":state.token}),
                 success: function(msg) {
                     commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
+                    commit('SetLevel', msg['level']);
+                    commit('SetCards', JSON.parse(msg['cards']));
                     v_confirm.email = msg["email"];
                     v_confirm.cell = msg["cell"];
                     v_confirm.address = msg["address"];
@@ -240,6 +250,7 @@ var v_login = new Vue( {
         signup_password_again_val: "",
         login_username_val: "",
         login_password_val: "",
+        login_remember_val: "",
         email_valid: true,
         username_valid: true,
         password_valid: true,
@@ -263,6 +274,7 @@ var v_login = new Vue( {
                 success: function(msg) {
                     v_login.err_reg = false;
                     store.commit("SetUser", {"username":v.signup_username_val, "token":msg['token']});
+                    store.commit('SetLogin', true);
                     window.location.replace('/');
                 },
                 error: function(xhr) {
@@ -278,7 +290,10 @@ var v_login = new Vue( {
                 method: "POST",
                 dataType: "json",
                 contentType: 'application/json;charset=UTF-8',
-                data: JSON.stringify({"username": this.login_username_val, "password": this.login_password_val}),
+                data: JSON.stringify({"username": this.login_username_val, 
+                    "password": this.login_password_val,
+                    "remember": this.login_remember_val
+                }),
                 success: function(msg) {
                     v_login.err_login = false;
                     store.commit('SetUser', {"username":msg["username"], "token":msg['token']});
@@ -448,7 +463,7 @@ var v_nav = new Vue ( {
                 v_main.GetOrders();
             }
         }
-    }
+    },
 });
 
 Vue.component('v-profile-bulletin', {
@@ -459,6 +474,7 @@ Vue.component('v-profile-bulletin', {
               <b>{{username}}</b>
             </div>
             <div class="panel-body">
+              <p><b>{{levelName}}</b></p>
               <p>学分：{{grade}}</p>
               <p>销售成功：{{good_sell}}</p>
               <p>销售失败：{{bad_sell}}</p>
@@ -480,7 +496,17 @@ Vue.component('v-profile-bulletin', {
             good_purchase: "0",
             bad_purchase: "0",
             error : "",
+            level : "0",
         };
+    },
+    computed: {
+        levelName: function() {
+            if (this.level == 0) {
+                return '普通学生';
+            } else {
+                return '未知级别';
+            }
+        }
     },
     methods: {
         Update: function() {
@@ -500,6 +526,7 @@ Vue.component('v-profile-bulletin', {
                     v.bad_sell = msg['bad_sell'];
                     v.good_purchase = msg['good_purchase'];
                     v.bad_purchase = msg['bad_purchase'];
+                    v.level = msg['level'];
                     v.error = "";
                 },
                 error: function(xhr) {
@@ -820,9 +847,11 @@ Vue.component('v-profile', {
                 }),
                 success: function(msg) {
                     v.info_success_msg = "修改资料成功!";
+                    v.info_err_msg = "";
                     store.dispatch("UpdateUserInfo");
                 },
                 error: function(xhr) {
+                    v.info_success_msg = "";
                     v.info_err_msg = xhr['responseJSON']["msg"];
                 }
             })
@@ -835,10 +864,93 @@ Vue.component('v-profile', {
     }
 });
 
+Vue.component('v-purse', {
+    template: `
+        <div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <b>我的卡包</b>
+            </div>
+            <div class="panel-body">
+              <div v-if="cards == {}">
+                您暂时没有任何卡哟！
+              </div>
+              <div>
+                <div class="panel panel-default" v-for="num, name in cards">
+                  <div class="panel-body">
+                    <div class="row">
+                      <div class="col-md-8">
+                        {{name}} x{{num}}
+                      </div>
+                      <div class="col-md-4">
+                        <button class="btn btn-sm btn-primary">使用</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    computed: {
+        cards: function() {
+            return this.$store.state.cards
+        }
+    },
+})
+
+Vue.component('v-shop', {
+    data : function() {
+        if (store) {
+            var uname = store.state.username;
+        } else {
+            var uname = "";
+        }
+
+        return {
+            username: uname,
+            cards: [
+                {"name":"小队长卡", "description": "变成小队长，有效期30天", "price": 1},   
+                {"name":"中队长卡", "description": "变成中队长，有效期30天", "price": 1},   
+                {"name":"大队长卡", "description": "变成大队长，有效期30天", "price": 1},   
+            ]
+        }
+    },
+    methods: {
+        PurchaseCard: function(cardName) {
+            var v = this;
+            $.ajax({
+                url: server_url + '/purchasecard',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    username: store.state.username,
+                    token: store.state.token,
+                    cardname: cardName,
+                }),
+                success: function(msg) {
+                    store.dispatch("UpdateUserInfo");
+                    v.$refs.profile.Update();
+                },
+                error: function(xhr) {
+                    console.log( xhr);
+                }
+            })
+            
+        },
+    }
+})
+
 var v_main = new Vue( {
     el: '#main_content',
+    store,
     data : {
         currPage: "home",
+        categories: ['外卖','家具','拼车','我的'],
         post_category: "外卖",
         order_category: "toMe",
         firstPageNum: 1,
@@ -849,11 +961,7 @@ var v_main = new Vue( {
     },
     computed: {
         isLogin: function() {
-            if (store && store.state) {
-                return store.state.isLogin;
-            } else {
-                return false;
-            }
+            return this.$store.state.isLogin;
         }
     },
     methods: {
@@ -878,11 +986,11 @@ var v_main = new Vue( {
             v.posts = [];
             if (v.post_category == '我的'){ 
                 store.dispatch('CheckTokenValid');
-                if (store.state.isLogin) {
+                if (this.$store.state.isLogin) {
                     ajax_url = server_url + '/getmypost';
                     ajax_data = {
-                        "username": store.state.username,
-                        "token": store.state.token,
+                        "username": this.$store.state.username,
+                        "token": this.$store.state.token,
                         "start": 10*(v.currPageNum - 1),
                         "end": 10*(v.currPageNum)
                     };
@@ -974,6 +1082,8 @@ var v_main = new Vue( {
     },
     mounted() {
         store.dispatch('UpdateUserInfo');
+        $('#home_ul > li').removeClass('active');
+        $('#home_ul > li').first().addClass('active');
         this.GetPosts();
     }
 });

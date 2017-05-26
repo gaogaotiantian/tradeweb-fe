@@ -30,6 +30,7 @@
             <li><a href="#" v-on:click="ChangeContent('home')">首页</a></li>
             <li><a href="#" v-on:click="ChangeContent('myOrder')">我的订单</a></li>
             <li><a href="#" v-on:click="ChangeContent('myProfile')">我的资料</a></li>
+            <li><a href="#" v-on:click="ChangeContent('shop')">商城</a></li>
             <li><a href="#" v-on:click="ChangeContent('about')">关于</a></li>
           </ul>
           <register inline-template>
@@ -57,10 +58,8 @@
           <div class="row collapse navbar-collapse" id="side-collapse">
             <nav class="nav-sidebar">
               <ul id="home_ul" v-show="currPage == 'home'" class="nav nav-pills nav-stacked">
-                <li class="active"><a href="#tab_waimai" data-toggle="tab" @click="ClickTab('外卖')">外卖</a></li>
-                <li><a href="#tab_jiaju" data-toggle="tab" @click="ClickTab('家具')">家具</a></li>
-                <li><a href="#tab_pinche" data-toggle="tab" @click="ClickTab('拼车')">拼车</a></li>
-                <li><a href="#tab_wode" data-toggle="tab" @click="ClickTab('我的')">我的</a></li>
+
+                <li v-for="cat in categories"><a href="#cat" data-toggle="tab" @click="ClickTab(cat)">{{cat}}</a></li>
               </ul>
               <ul id="myorder_ul" v-show="currPage == 'myOrder' && isLogin" class="nav nav-pills nav-stacked">
                 <li class="active"><a href="#tab_tome" data-toggle="tab" @click="ClickTab('toMe')">向我求购</a></li>
@@ -328,6 +327,38 @@
         </div>
       </div>
     </div>
+    <div v-if="currPage == 'shop'">
+      <v-shop inline-template v-if="isLogin">
+        <div class="row">
+          <div class="col-md-3">
+            <v-profile-bulletin ref="profile" :username="username">
+            </v-profile-bulletin>
+            <v-purse ref="purse">
+            </v-purse>
+          </div>
+          <div class="col-md-9">
+            <div class="panel panel-default" v-for="card in cards">
+              <div class="panel-heading">
+                {{card["name"]}}
+              </div>
+              <div class="panel-body">
+                <div class="row">
+                  <div class="col-md-9">
+                    {{card["description"]}}
+                  </div>
+                  <div class="col-md-1">
+                    {{card["price"]}}学分
+                  </div>
+                  <div class="col-md-2">
+                    <button class="btn btn-success" @click="PurchaseCard(card['name'])">购买</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </v-shop>
+    </div>
     <div v-if="currPage == 'about'">
       <div class="row">
         <div class="col-md-12">
@@ -382,6 +413,12 @@
                 <div class="controls">
                   <input required="" id="login_password" type="password" class="form-control" v-model="login_password_val">
                 </div>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label" class="checkbox-inline" for="login_remember">
+                  <input type="checkbox" id="login_remember" type="password" v-model="login_remember_val">记住我   
+                </label>
               </div>
 
               <div class="control-group">
