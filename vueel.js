@@ -92,9 +92,10 @@ const store = new Vuex.Store( {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify({"username": state.username, "token":state.token}),
                 success: function(msg) {
+                    console.log(msg)
                     commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
                     commit('SetLevel', msg['level']);
-                    commit('SetCards', JSON.parse(msg['cards']));
+                    commit('SetCards', msg['cards']);
                     v_confirm.email = msg["email"];
                     v_confirm.cell = msg["cell"];
                     v_confirm.address = msg["address"];
@@ -176,6 +177,19 @@ Vue.component('register', {
         }
     }
 });
+
+var v_err_msg = new Vue( {
+    el: '#err_msg_modal',
+    data: {
+        content: ""
+    },
+    methods: {
+        ShowError: function(msg) {
+            this.content = msg;
+            $('#err_msg_modal').modal('show');
+        }
+    }
+})
 
 var v_confirm = new Vue( {
     el: '#confirm_modal',
@@ -437,6 +451,7 @@ var v_new_post = new Vue ( {
         for (var i = 0; i < this.max_item_num; i++) {
             this.items.push("");
             this.prices.push("");
+            this.avai.push("");
         }
     }
 })
@@ -686,6 +701,8 @@ Vue.component ('v-post', {
             if (this.$refs.v_items[0].OrderValid()) {
                 this.$refs.v_items[0].SubmitOrder();
                 $('#confirm_modal').modal('toggle');
+            } else {
+                v_err_msg.ShowError('您没选择任何商品，或购买数量超出限额。')
             }
         },
     }
@@ -872,7 +889,7 @@ Vue.component('v-purse', {
               <b>我的卡包</b>
             </div>
             <div class="panel-body">
-              <div v-if="cards == {}">
+              <div v-if="Object.keys(cards).length == 0">
                 您暂时没有任何卡哟！
               </div>
               <div>
@@ -883,7 +900,7 @@ Vue.component('v-purse', {
                         {{name}} x{{num}}
                       </div>
                       <div class="col-md-4">
-                        <button class="btn btn-sm btn-primary">使用</button>
+                        <button class="btn btn-sm btn-primary" @click="UseCard(name)">使用</button>
                       </div>
                     </div>
                   </div>
@@ -899,6 +916,11 @@ Vue.component('v-purse', {
             return this.$store.state.cards
         }
     },
+    methods: {
+        UseCard: function(cardName) {
+            v_err_msg.ShowError("error!");
+        }
+    }
 })
 
 Vue.component('v-shop', {
@@ -911,11 +933,7 @@ Vue.component('v-shop', {
 
         return {
             username: uname,
-            cards: [
-                {"name":"小队长卡", "description": "变成小队长，有效期30天", "price": 1},   
-                {"name":"中队长卡", "description": "变成中队长，有效期30天", "price": 1},   
-                {"name":"大队长卡", "description": "变成大队长，有效期30天", "price": 1},   
-            ]
+            cards: []
         }
     },
     methods: {
@@ -940,8 +958,27 @@ Vue.component('v-shop', {
                     console.log( xhr);
                 }
             })
-            
         },
+        GetCardList: function() {
+            var v = this;
+            $.ajax({
+                url: server_url + '/getcardlist',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                success: function(msg) {
+                    console.log(msg)
+                    v.cards = msg;
+                },
+                error: function(xhr) {
+                    console.log( xhr);
+                }
+            })
+        }
+    },
+    created() {
+        this.GetCardList()
     }
 })
 
@@ -1037,7 +1074,6 @@ var v_main = new Vue( {
                 success: function(msg) {
                     for (var i = 0; i < msg.length; i++) {
                         msg[i].is_display = false;
-                        msg[i].order = JSON.parse(msg[i].order);
                     }
                     v.orders = JSON.parse(JSON.stringify(msg));
                     console.log(v.orders)

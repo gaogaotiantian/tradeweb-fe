@@ -339,18 +339,18 @@
           <div class="col-md-9">
             <div class="panel panel-default" v-for="card in cards">
               <div class="panel-heading">
-                {{card["name"]}}
+                {{card[0]}}
               </div>
               <div class="panel-body">
                 <div class="row">
                   <div class="col-md-9">
-                    {{card["description"]}}
+                    {{card[2]}}
                   </div>
                   <div class="col-md-1">
-                    {{card["price"]}}学分
+                    {{card[1]}}学分
                   </div>
                   <div class="col-md-2">
-                    <button class="btn btn-success" @click="PurchaseCard(card['name'])">购买</button>
+                    <button class="btn btn-success" @click="PurchaseCard(card[0])">购买</button>
                   </div>
                 </div>
               </div>
@@ -369,6 +369,25 @@
         <div class="col-md-12">
         如果对本网站有任何问题，意见或建议，请联系<a href="mailto:gaogaotiantian@hotmail.com">gaogaotiantian@hotmail.com</a>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for error message -->
+<div class="modal bs-modal-sm" id="err_msg_modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        出错了哟！
+      </div>
+      <div class="row modal-body">
+        <div class="col-md-12">
+          {{content}}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" data-dismiss="modal">朕知道了</button>
       </div>
     </div>
   </div>
