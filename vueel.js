@@ -373,7 +373,10 @@ var v_login = new Vue( {
                     v_login.err_reg = false;
                     store.commit("SetUser", {"username":v.signup_username_val, "token":msg['token']});
                     store.commit('SetLogin', true);
-                    window.location.replace('/');
+                    setTimeout(function() {
+                        window.location.replace('/')},
+                        1500
+                    );
                 },
                 error: function(xhr) {
                     v_login.err_reg = true;
@@ -397,7 +400,7 @@ var v_login = new Vue( {
                     store.commit('SetLogin', true);
                     setTimeout(function() {
                         window.location.replace('/')},
-                        2000
+                        1500
                     );
                 },
                 error: function(xhr) {
