@@ -1,5 +1,5 @@
-var server_url = "http://localhost:8000";
-//var server_url = "https://fathomless-island-85775.herokuapp.com/";
+//var server_url = "http://localhost:8000";
+var server_url = "https://fathomless-island-85775.herokuapp.com/";
 const store = new Vuex.Store( {
     state : {
         isLogin: false,
