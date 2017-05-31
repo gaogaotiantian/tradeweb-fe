@@ -395,7 +395,10 @@ var v_login = new Vue( {
                     v_login.err_login = false;
                     store.commit('SetUser', {"username":msg["username"], "token":msg['token']});
                     store.commit('SetLogin', true);
-                    //window.location.replace('/');
+                    setTimeout(function() {
+                        window.location.replace('/')},
+                        2000
+                    );
                 },
                 error: function(xhr) {
                     v_login.err_login = true;
