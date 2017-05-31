@@ -13,6 +13,7 @@ const store = new Vuex.Store( {
         totalPrice: 0,
         level: 0,
         cards: {},
+        pendingRequests: 0,
         checkusername: ""
     },
     mutations: {
@@ -52,6 +53,9 @@ const store = new Vuex.Store( {
         },
         SetCards(state, data) {
             state.cards = data;
+        },
+        SetPendingRequests(state, data) {
+            state.pendingRequests = data;
         },
         ClearUser(state) {
             state.isLogin = false;
@@ -96,6 +100,7 @@ const store = new Vuex.Store( {
                     commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
                     commit('SetLevel', msg['level']);
                     commit('SetCards', msg['cards']);
+                    commit('SetPendingRequests', msg['pending_requests']);
                     v_confirm.email = msg["email"];
                     v_confirm.cell = msg["cell"];
                     v_confirm.address = msg["address"];
@@ -148,6 +153,96 @@ Vue.component('register', {
         }
     }
 });
+
+Vue.component('v-purse', {
+    template: `
+        <div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <b>我的卡包</b>
+            </div>
+            <div class="panel-body">
+              <div v-if="Object.keys(cards).length == 0">
+                您暂时没有任何卡哟！
+              </div>
+              <div>
+                <div class="panel panel-default" v-for="num, name in cards">
+                  <div class="panel-body">
+                    <div class="row">
+                      <div class="col-md-8">
+                        {{name}} x{{num}}
+                      </div>
+                      <div class="col-md-4">
+                        <button class="btn btn-sm btn-primary pull-right" v-if="CardUsable(name, target)" @click="UseCard(name, target)">使用</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    props: ["target"],
+    computed: {
+        cards: function() {
+            return store.state.cards
+        }
+    },
+    methods: {
+        CardUsable: function(cardname, target) {
+            if (["小队长卡","中队长卡","大队长卡"].indexOf(cardname) >= 0) {
+                if (Object.keys(target).length == 0) {
+                    return true;
+                }
+            } else if (["加粗卡","变红卡","变绿卡","变蓝卡"].indexOf(cardname) >= 0) {
+                if (Object.keys(target).indexOf("postid") >= 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        UseCard: function(cardName) {
+            var v = this;
+            $.ajax({
+                url: server_url + '/usecard',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    username: store.state.username,
+                    token: store.state.token,
+                    cardname: cardName,
+                    target: v.target
+                }),
+                success: function(msg) {
+                    store.dispatch("UpdateUserInfo");
+                    v.$emit('usecard');
+                },
+                error: function(xhr) {
+                    console.log( xhr);
+                    v_err_msg.ShowError(xhr['responseJSON']['msg']);
+                }
+            })
+        },
+    }
+})
+
+var v_card_use = new Vue( {
+    el: '#card_use_modal',
+    data: {
+        success: false,
+        target: {},
+    },
+    methods: {
+        SetTarget: function(target) {
+            this.target = target;
+            this.success = false;
+        }
+    }
+})
 
 var v_confirm_action = new Vue( {
     el: '#action_confirm',
@@ -387,6 +482,10 @@ var v_new_post = new Vue ( {
                 }
             }
             return temp_avai
+        },
+        level_item_limit: function() {
+            var lim = [0, 3, 5, 8, 12];
+            return lim[store.state.level];
         }
     },
     methods: {
@@ -425,19 +524,24 @@ var v_new_post = new Vue ( {
             }
         },
         AddLine: function() {
-            this.max_item_num += 1;
-            this.items.push("");
-            this.prices.push("");
+            if (this.max_item_num < this.level_item_limit) {
+                this.max_item_num += 1;
+                this.items.push("");
+                this.prices.push("");
+                this.avai.push("");
+            }
         },
         RemoveLine: function() {
             if (this.max_item_num > 0) {
                 this.max_item_num -= 1;
                 this.items.pop();
                 this.prices.pop();
+                this.avai.pop();
             }
         }
     },
     created() {
+        this.max_item_num = 1;
         for (var i = 0; i < this.max_item_num; i++) {
             this.items.push("");
             this.prices.push("");
@@ -451,8 +555,14 @@ var v_nav = new Vue ( {
     data: {
         category: "外卖"
     },
+    computed: {
+        pendingRequests: function() {
+            return store.state.pendingRequests;
+        }
+    },
     methods : {
         ChangeContent: function(c) {
+            store.dispatch("CheckTokenValid");
             v_main.currPage = c;
             if (c == 'home') {
                 $('#home_ul > li').removeClass('active');
@@ -476,10 +586,10 @@ Vue.component('v-profile-bulletin', {
         <div v-if="error == ''">
           <div class="panel panel-default">
             <div class="panel-heading">
-              <b>{{username}}</b>
+              <h4><b>{{username}}</b></h4>
+              <abbr v-bind:title="[detail]">{{levelName}}</abbr>
             </div>
             <div class="panel-body">
-              <p><b>{{levelName}}</b><span v-if="level>1">（剩余{{Math.round(level_exp_time/86400)}}天）</span></p>
               <p>学分：{{grade}}</p>
               <p>销售成功：{{good_sell}}</p>
               <p>销售失败：{{bad_sell}}</p>
@@ -520,6 +630,17 @@ Vue.component('v-profile-bulletin', {
             } else {
                 return '未知级别';
             }
+        },
+        detail: function() {
+            var d = [[], [24, 1, 3],[6, 2, 5], [3, 3, 8], [1, 4, 12]];
+            var ret = "";
+            
+            ret += "发帖间隔"+d[this.level][0]+"小时，学分收益"+d[this.level][1]+"倍，每帖最多"+d[this.level][2]+"项。";
+
+            if (this.level != 0) {
+                ret += "（剩余" + Math.round(this.level_exp_time/86400)+"天）";
+            }
+            return ret;
         }
     },
     methods: {
@@ -675,6 +796,14 @@ Vue.component ('v-post', {
                 return false;
             }
         },
+        classObject: function() {
+            return {
+                bold: this.post['buff']['bold'] == true,
+                red: this.post['buff']['color'] == 'red',
+                green: this.post['buff']['color'] == 'green',
+                blue: this.post['buff']['color'] == 'blue',
+            }
+        }
     },
     methods: {
         ToggleDisplay: function() {
@@ -696,6 +825,10 @@ Vue.component ('v-post', {
                     window.location.replace('/');
                 }
             })
+        },
+        UseCard: function() {
+            v_card_use.SetTarget({"postid":this.post['id'], "postTitle":this.post['title']});
+            $('#card_use_modal').modal('show');
         },
         SubmitOrder: function() {
             if (this.$refs.v_items[0].OrderValid()) {
@@ -883,67 +1016,6 @@ Vue.component('v-profile', {
     }
 });
 
-Vue.component('v-purse', {
-    template: `
-        <div>
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <b>我的卡包</b>
-            </div>
-            <div class="panel-body">
-              <div v-if="Object.keys(cards).length == 0">
-                您暂时没有任何卡哟！
-              </div>
-              <div>
-                <div class="panel panel-default" v-for="num, name in cards">
-                  <div class="panel-body">
-                    <div class="row">
-                      <div class="col-md-8">
-                        {{name}} x{{num}}
-                      </div>
-                      <div class="col-md-4">
-                        <button class="btn btn-sm btn-primary" @click="UseCard(name)">使用</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `,
-    computed: {
-        cards: function() {
-            return this.$store.state.cards
-        }
-    },
-    methods: {
-        UseCard: function(cardName) {
-            var v = this;
-            $.ajax({
-                url: server_url + '/usecard',
-                method: 'POST',
-                dataType: "json",
-                cache: false,
-                contentType: 'application/json;charset=UTF-8',
-                data: JSON.stringify({
-                    username: store.state.username,
-                    token: store.state.token,
-                    cardname: cardName,
-                }),
-                success: function(msg) {
-                    store.dispatch("UpdateUserInfo");
-                    v.$emit('usecard');
-                },
-                error: function(xhr) {
-                    console.log( xhr);
-                    v_err_msg.ShowError(xhr['responseJSON']['msg']);
-                }
-            })
-        },
-    }
-})
 
 Vue.component('v-shop', {
     data : function() {
@@ -1106,6 +1178,11 @@ var v_main = new Vue( {
                 error: function(xhr) {
                     console.log(xhr);
                 },
+                statusCode: {
+                    401: function() {
+                        store.dispatch("CheckTokenValid");
+                    }
+                }
             })
         },
         ChangePageNum: function(pageNum) {

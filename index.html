@@ -28,7 +28,7 @@
         <div class="collapse navbar-collapse" id="header-collapse">
           <ul class="nav navbar-nav">
             <li><a href="#" v-on:click="ChangeContent('home')">首页</a></li>
-            <li><a href="#" v-on:click="ChangeContent('myOrder')">我的订单</a></li>
+            <li><a href="#" v-on:click="ChangeContent('myOrder')">我的订单 <span v-if="pendingRequests >= 0" class="badge">{{pendingRequests}}</span></a></li>
             <li><a href="#" v-on:click="ChangeContent('myProfile')">我的资料</a></li>
             <li><a href="#" v-on:click="ChangeContent('shop')">商城</a></li>
             <li><a href="#" v-on:click="ChangeContent('about')">关于</a></li>
@@ -76,10 +76,13 @@
                   <div class="panel-heading" v-on:click="ToggleDisplay(post)">
                     <div class="row flex-end-row">
                       <div class="col-md-8 col-xs-12">
-                        <h4>{{post.title}}</h4>
+                        <h4 v-bind:class="classObject">{{post.title}}</h4>
                       </div>
-                      <div class="col-md-3 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
+                      <div class="col-md-2 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
                         <v-usertag :username="post.author"></v-usertag><span>, {{post.timeago}}</span>
+                      </div>
+                      <div class="col-md-1 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
+                        <button class="btn btn-primary pull-right" v-if="IsAuthorMe" @click.stop="UseCard">使用卡片</button>
                       </div>
                       <div class="col-md-1 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
                         <button class="btn btn-danger pull-right" v-if="IsAuthorMe" @click.stop="deleteConfirm=true">删除</button>
@@ -331,7 +334,7 @@
           <div class="col-md-3">
             <v-profile-bulletin ref="profile" :username="username">
             </v-profile-bulletin>
-            <v-purse ref="purse" v-on:usecard="Update">
+            <v-purse ref="purse" v-on:usecard="Update" :target="{}">
             </v-purse>
           </div>
           <div class="col-md-9">
@@ -402,11 +405,29 @@
   </div>
 </div>
 
+<!-- Modal for card use-->
+<div class="modal bs-modal-md" id="card_use_modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        对《{{target['postTitle']}}》使用卡片！
+      </div>
+      <div class="row modal-body">
+        <div class="col-md-12">
+          <div class="alert alert-success" v-if="success" role=alert>卡片使用成功，现在刷新一下页面吧！</div>
+          <v-purse :target="target" @usecard="success = true">
+          </v-purse>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal for error message -->
 <div class="modal bs-modal-sm" id="err_msg_modal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header text-danger bg-danger">
         出错了哟！
       </div>
       <div class="row modal-body">
@@ -595,7 +616,7 @@
                   <div class="col-md-12 col-xs-12 text-center">
                     <label></label>
                     <button type="button" class="btn btn-default" @click="RemoveLine()"><span class="glyphicon glyphicon-minus"></span></button>
-                    <button type="button" class="btn btn-default" @click="AddLine()"><span class="glyphicon glyphicon-plus"></span></button>
+                    <button type="button" class="btn btn-default" v-if="max_item_num < level_item_limit" @click="AddLine()"><span class="glyphicon glyphicon-plus"></span></button>
                   </div>
                 </div>
               </div>
