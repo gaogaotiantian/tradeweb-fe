@@ -479,7 +479,7 @@ Vue.component('v-profile-bulletin', {
               <b>{{username}}</b>
             </div>
             <div class="panel-body">
-              <p><b>{{levelName}}</b></p>
+              <p><b>{{levelName}}</b><span v-if="level>1">（剩余{{Math.round(level_exp_time/86400)}}天）</span></p>
               <p>学分：{{grade}}</p>
               <p>销售成功：{{good_sell}}</p>
               <p>销售失败：{{bad_sell}}</p>
@@ -502,6 +502,7 @@ Vue.component('v-profile-bulletin', {
             bad_purchase: "0",
             error : "",
             level : 0,
+            level_exp_time: 0,
         };
     },
     computed: {
@@ -540,6 +541,7 @@ Vue.component('v-profile-bulletin', {
                     v.good_purchase = msg['good_purchase'];
                     v.bad_purchase = msg['bad_purchase'];
                     v.level = msg['level'];
+                    v.level_exp_time = msg['level_exp_time'];
                     v.error = "";
                 },
                 error: function(xhr) {
