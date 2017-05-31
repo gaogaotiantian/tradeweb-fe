@@ -184,24 +184,22 @@
                     </div>
                     <div class="row pull-right" v-if="orderToMe && order.status=='ready'">
                       <div class="col-md-12">
-                        <button class="btn btn-danger" @click="Action('decline');info='确定要拒绝订单么？'">拒绝订单</button>
-                        <button class="btn btn-primary" @click="Action('confirm');info='确定要确认订单么？'">确认订单</button>
+                        <button class="btn btn-danger" @click="info='确定要拒绝订单么？';Action('decline');">拒绝订单</button>
+                        <button class="btn btn-primary" @click="info='确定要确认订单么？';Action('confirm');">确认订单</button>
                       </div>
                     </div>
                     <div class="row pull-right" v-if="orderFromMe && order.status=='ready'">
                       <div class="col-md-12">
-                        <button class="btn btn-danger" @click="Action('cancel');info='确定要取消订单么？'">取消订单</button>
+                        <button class="btn btn-danger" @click="info='确定要取消订单么？';Action('cancel');">取消订单</button>
                       </div>
                     </div>
                     <div class="row pull-right" v-if="orderFromMe && order.status=='confirm'">
                       <div class="col-md-12">
-                        <button class="btn btn-danger" @click="Action('unfinish');info='确定交易失败了么？'">交易失败</button>
-                        <button class="btn btn-success" @click="Action('finish');info='确定交易完成了么？'">交易完成</button>
+                        <button class="btn btn-danger" @click="info='确定交易失败了么？';Action('unfinish')">交易失败</button>
+                        <button class="btn btn-success" @click="info='确定交易完成了么？';Action('finish')">交易完成</button>
                       </div>
                     </div>
                   </div>
-                  <action-confirm-modal :callback="callback" :callback_data="callback_data" :id="'orderConfirm'" :button_type="button_type" :info="info">
-                  </action-confirm-modal>
                 </div>
               </v-order>
             </div>
@@ -333,7 +331,7 @@
           <div class="col-md-3">
             <v-profile-bulletin ref="profile" :username="username">
             </v-profile-bulletin>
-            <v-purse ref="purse">
+            <v-purse ref="purse" v-on:usecard="Update">
             </v-purse>
           </div>
           <div class="col-md-9">
@@ -368,6 +366,31 @@
       <div class="row">
         <div class="col-md-12">
         如果对本网站有任何问题，意见或建议，请联系<a href="mailto:gaogaotiantian@hotmail.com">gaogaotiantian@hotmail.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for confirm actions -->
+<div class="modal bs-modal-sm fade" id="action_confirm" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-head text-center">
+      </div>
+      <div class="modal-body">
+        {{info}}
+      </div>
+      <div class="modal-foot">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="row pull-right">
+              <div class="col-md-12">
+                <button class="btn btn-default" data-dismiss="modal">取消操作</button>
+                <button class="btn" v-bind:class="[button_type]" @click="callback(callback_data)">确认操作</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -581,10 +604,10 @@
                   {{err_msg}}
                 </div>
                 <div class="col-md-1 pull-right controls">
-                  <button class="btn btn-lg btn-success pull-right">确定</button>
+                  <button class="btn btn-success pull-right">确定</button>
                 </div>
                 <div class="col-md-1 pull-right controls">
-                  <button class="btn btn-lg btn-fail pull-right" data-dismiss="modal">取消</button>
+                  <button class="btn btn-fail pull-right" data-dismiss="modal">取消</button>
                 </div>
               </div>
             </div>

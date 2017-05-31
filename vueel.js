@@ -123,35 +123,6 @@ const store = new Vuex.Store( {
     }
 })
 
-Vue.component('action-confirm-modal', {
-    template: `
-      <div class="modal bs-modal-sm fade" v-bind:id="id" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-sm">
-          <div class="modal-content">
-            <div class="modal-head text-center">
-            </div>
-            <div class="modal-body">
-              {{info}}
-            </div>
-            <div class="modal-foot">
-              <div class="row">
-                <div class="col-md-12">
-                  <div class="row pull-right">
-                    <div class="col-md-12">
-                      <button class="btn btn-default" data-dismiss="modal">取消操作</button>
-                      <button class="btn" v-bind:class="[button_type]" @click="callback(callback_data)">确认操作</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `,
-    props: ['callback', 'callback_data', 'id', 'button_type', 'info'],
-    
-});
 
 Vue.component('register', {
     computed: {
@@ -174,6 +145,25 @@ Vue.component('register', {
                 store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token})
                 store.dispatch("CheckTokenValid");
             }
+        }
+    }
+});
+
+var v_confirm_action = new Vue( {
+    el: '#action_confirm',
+    data: {
+        info: "",
+        callback: function(){},
+        callback_data: {},
+        button_type: "btn-default"
+    },
+    methods: {
+        SetAction: function(callback, callback_data, button_type, info) {
+            this.callback = callback;
+            this.callback_data = callback_data;
+            this.button_type = button_type;
+            this.info = info;
+            $('#action_confirm').modal('show');
         }
     }
 });
@@ -511,13 +501,21 @@ Vue.component('v-profile-bulletin', {
             good_purchase: "0",
             bad_purchase: "0",
             error : "",
-            level : "0",
+            level : 0,
         };
     },
     computed: {
         levelName: function() {
             if (this.level == 0) {
+                return " ";
+            } else if (this.level == 1) {
                 return '普通学生';
+            } else if (this.level == 2) {
+                return '小队长'
+            } else if (this.level == 3) {
+                return '中队长'
+            } else if (this.level == 4) {
+                return '大队长'
             } else {
                 return '未知级别';
             }
@@ -715,7 +713,8 @@ Vue.component ('v-order', {
             info: "",
             callback: null,
             callback_data: {},
-            button_type: "btn-default"
+            button_type: "btn-default",
+            confirm_modal_show: true,
         }
     },
     computed: {
@@ -766,7 +765,7 @@ Vue.component ('v-order', {
                     data: data,
                     success: function(msg) {
                         console.log(msg);
-                        $('#orderConfirm').modal('hide');
+                        $('#action-confirm').modal('hide');
                         window.location.replace('/');
                     },
                     error: function(xhr) {
@@ -787,7 +786,7 @@ Vue.component ('v-order', {
             } else if (action == 'finish') {
                 this.button_type = 'btn-success';
             } 
-            $('#orderConfirm').modal('show');
+            v_confirm_action.SetAction(this.callback, this.callback_data, this.button_type, this.info);
         }
     }
 });
@@ -822,6 +821,7 @@ Vue.component('v-profile', {
             var v = this;
             if (this.new_password != this.new_password_again) {
                 this.password_err_msg = "两次输入密码需一致！";
+                return;
             } else {
                 this.password_err_msg = "";
             }
@@ -918,8 +918,28 @@ Vue.component('v-purse', {
     },
     methods: {
         UseCard: function(cardName) {
-            v_err_msg.ShowError("error!");
-        }
+            var v = this;
+            $.ajax({
+                url: server_url + '/usecard',
+                method: 'POST',
+                dataType: "json",
+                cache: false,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    username: store.state.username,
+                    token: store.state.token,
+                    cardname: cardName,
+                }),
+                success: function(msg) {
+                    store.dispatch("UpdateUserInfo");
+                    v.$emit('usecard');
+                },
+                error: function(xhr) {
+                    console.log( xhr);
+                    v_err_msg.ShowError(xhr['responseJSON']['msg']);
+                }
+            })
+        },
     }
 })
 
@@ -952,7 +972,7 @@ Vue.component('v-shop', {
                 }),
                 success: function(msg) {
                     store.dispatch("UpdateUserInfo");
-                    v.$refs.profile.Update();
+                    v.Update();
                 },
                 error: function(xhr) {
                     console.log( xhr);
@@ -975,6 +995,9 @@ Vue.component('v-shop', {
                     console.log( xhr);
                 }
             })
+        },
+        Update: function() {
+            this.$refs.profile.Update();
         }
     },
     created() {
