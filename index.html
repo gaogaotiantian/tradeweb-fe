@@ -81,10 +81,10 @@
                       <div class="col-md-2 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
                         <v-usertag :username="post.author"></v-usertag><span>, {{post.timeago}}</span>
                       </div>
-                      <div class="col-md-1 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
+                      <div class="col-md-1 col-xs-3" v-if="!post['is_deleted'] && !deleteConfirm">
                         <button class="btn btn-primary pull-right" v-if="IsAuthorMe" @click.stop="UseCard">使用卡片</button>
                       </div>
-                      <div class="col-md-1 col-xs-6" v-if="!post['is_deleted'] && !deleteConfirm">
+                      <div class="col-md-1 col-xs-3" v-if="!post['is_deleted'] && !deleteConfirm">
                         <button class="btn btn-danger pull-right" v-if="IsAuthorMe" @click.stop="deleteConfirm=true">删除</button>
                       </div>
                       <div class="col-md-4" v-if="!post['is_deleted'] && deleteConfirm">
@@ -344,14 +344,14 @@
               </div>
               <div class="panel-body">
                 <div class="row">
-                  <div class="col-md-9">
+                  <div class="col-md-9 col-xs-12">
                     {{card[2]}}
                   </div>
-                  <div class="col-md-1">
+                  <div class="col-md-1 col-xs-6">
                     {{card[1]}}学分
                   </div>
-                  <div class="col-md-2">
-                    <button class="btn btn-success" @click="PurchaseCard(card[0])">购买</button>
+                  <div class="col-md-2 col-xs-6">
+                    <button class="btn btn-success pull-right" @click="PurchaseCard(card[0])">购买</button>
                   </div>
                 </div>
               </div>

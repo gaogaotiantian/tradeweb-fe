@@ -169,10 +169,10 @@ Vue.component('v-purse', {
                 <div class="panel panel-default" v-for="num, name in cards">
                   <div class="panel-body">
                     <div class="row">
-                      <div class="col-md-8">
+                      <div class="col-md-8 col-xs-8">
                         {{name}} x{{num}}
                       </div>
-                      <div class="col-md-4">
+                      <div class="col-md-4 col-xs-4">
                         <button class="btn btn-sm btn-primary pull-right" v-if="CardUsable(name, target)" @click="UseCard(name, target)">使用</button>
                       </div>
                     </div>
