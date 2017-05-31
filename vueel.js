@@ -121,7 +121,7 @@ const store = new Vuex.Store( {
                     commit('ClearUser');
                 },
                 error: function(msg) {
-                    alert('Logoff error!');
+                    commit('ClearUser');
                 }
             })
         }
