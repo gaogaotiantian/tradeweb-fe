@@ -363,7 +363,6 @@ var v_login = new Vue( {
     methods: {
         Register: function() {
             var v = this;
-            console.log("register")
             $.ajax({
                 url: server_url+"/register",
                 method: "POST",
@@ -383,7 +382,6 @@ var v_login = new Vue( {
             })
         },
         Login: function() {
-            console.log("login");
             $.ajax({
                 url: server_url+"/login",
                 method: "POST",
@@ -397,7 +395,7 @@ var v_login = new Vue( {
                     v_login.err_login = false;
                     store.commit('SetUser', {"username":msg["username"], "token":msg['token']});
                     store.commit('SetLogin', true);
-                    window.location.replace('/');
+                    //window.location.replace('/');
                 },
                 error: function(xhr) {
                     v_login.err_login = true;
