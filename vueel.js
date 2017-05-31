@@ -641,7 +641,7 @@ Vue.component('v-profile-bulletin', {
             
             ret += "发帖间隔"+d[this.level][0]+"小时，学分收益"+d[this.level][1]+"倍，每帖最多"+d[this.level][2]+"项。";
 
-            if (this.level != 0) {
+            if (this.level > 1) {
                 ret += "（剩余" + Math.round(this.level_exp_time/86400)+"天）";
             }
             return ret;
