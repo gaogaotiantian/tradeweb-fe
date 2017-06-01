@@ -1132,6 +1132,9 @@ var v_main = new Vue( {
                         "start": 10*(v.currPageNum - 1),
                         "end": 10*(v.currPageNum)
                     };
+                } else {
+                    v.posts = [];
+                    return;
                 }
             } else {
                 ajax_url = server_url + '/getpost'
