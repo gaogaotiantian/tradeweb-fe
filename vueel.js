@@ -15,7 +15,8 @@ const store = new Vuex.Store( {
         cards: {},
         pendingRequests: 0,
         checkusername: "",
-        loadedLocal: false
+        loadedLocal: false,
+        categories: ['我的','食品','衣物','学术','家具','电子','拼车','其他'],
     },
     mutations: {
         SetOrder (state, data) {
@@ -507,7 +508,7 @@ var v_new_post = new Vue ( {
             return lim[store.state.level];
         },
         categories: function() {
-            return v_main.categories.slice(1);
+            return store.state.categories.slice(1);
         }
     },
     methods: {
@@ -1106,7 +1107,6 @@ var v_main = new Vue( {
     store,
     data : {
         currPage: "home",
-        categories: ['我的','食品','衣物','学术','家具','电子','拼车','其他'],
         post_category: "我的",
         order_category: "toMe",
         firstPageNum: 1,
@@ -1118,6 +1118,9 @@ var v_main = new Vue( {
     computed: {
         isLogin: function() {
             return this.$store.state.isLogin;
+        },
+        categories: function() {
+            return store.state.categories;
         }
     },
     methods: {
