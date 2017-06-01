@@ -566,7 +566,7 @@ var v_nav = new Vue ( {
     },
     methods : {
         ChangeContent: function(c) {
-            store.dispatch("CheckTokenValid");
+            store.dispatch('UpdateUserInfo');
             v_main.currPage = c;
             if (c == 'home') {
                 $('#home_ul > li').removeClass('active');
