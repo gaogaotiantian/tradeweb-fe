@@ -14,7 +14,8 @@ const store = new Vuex.Store( {
         level: 0,
         cards: {},
         pendingRequests: 0,
-        checkusername: ""
+        checkusername: "",
+        loadedLocal: false
     },
     mutations: {
         SetOrder (state, data) {
@@ -54,6 +55,9 @@ const store = new Vuex.Store( {
         SetCards(state, data) {
             state.cards = data;
         },
+        SetLoadedLocal(state, data){
+            state.loadedLocal = data;
+        },
         SetPendingRequests(state, data) {
             state.pendingRequests = data;
         },
@@ -69,6 +73,14 @@ const store = new Vuex.Store( {
     },
     actions: {
         CheckTokenValid({commit, state}) {
+            if (state.loadedLocal == false) {
+                if (typeof(Storage) !== "undefined") {
+                    if (localStorage.username !== undefined) {
+                        store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token})
+                    }
+                }
+                store.commit('SetLoadedLocal', true);
+            }
             $.ajax( {
                 url: server_url+"/uservalid",
                 method: "POST",
@@ -84,11 +96,20 @@ const store = new Vuex.Store( {
                     
                 },
                 error: function(msg) {
+                    console.log("cleared there")
                     commit('ClearUser');
                 }
             })
         },
         UpdateUserInfo({commit, state}) {
+            if (state.loadedLocal == false) {
+                if (typeof(Storage) !== "undefined") {
+                    if (localStorage.username !== undefined) {
+                        store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token})
+                    }
+                }
+                store.commit('SetLoadedLocal', true);
+            }
             $.ajax( {
                 url: server_url+"/myinfo",
                 method: "POST",
@@ -144,13 +165,7 @@ Vue.component('register', {
         }
     },
     created() {
-        if (typeof(Storage) !== "undefined") {
-            console.log(localStorage)
-            if (localStorage.username !== undefined) {
-                store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token})
-                store.dispatch("CheckTokenValid");
-            }
-        }
+        store.dispatch("CheckTokenValid");
     }
 });
 
