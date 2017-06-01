@@ -557,7 +557,7 @@ var v_new_post = new Vue ( {
 var v_nav = new Vue ( {
     el: '#top_nav',
     data: {
-        category: "外卖"
+        category: "我的"
     },
     computed: {
         pendingRequests: function() {
@@ -571,8 +571,8 @@ var v_nav = new Vue ( {
             if (c == 'home') {
                 $('#home_ul > li').removeClass('active');
                 $('#home_ul > li').first().addClass('active');
-                this.category = '外卖';
-                v_main.post_category = '外卖';
+                this.category = '我的';
+                v_main.post_category = '我的';
                 v_main.GetPosts();
             } else if (c == 'myOrder') {
                 $('#myorder_ul > li').removeClass('active');
@@ -1088,8 +1088,8 @@ var v_main = new Vue( {
     store,
     data : {
         currPage: "home",
-        categories: ['外卖','家具','拼车','我的'],
-        post_category: "外卖",
+        categories: ['我的','食品','衣物','学术','家具','电子','拼车','其他'],
+        post_category: "我的",
         order_category: "toMe",
         firstPageNum: 1,
         lastPageNum: 5,
