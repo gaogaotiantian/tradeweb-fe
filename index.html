@@ -592,9 +592,7 @@
             <div class="row">
               <div class="col-md-2 col-xs-4">
                 <select required="" class="form-control pull-right" v-model="category">
-                  <option>外卖</option>
-                  <option>家具</option>
-                  <option>拼车</option>
+                  <option v-for="cat in categories">{{cat}}</option>
                 </select>
               </div>
               <div class="col-md-10 col-xs-8">

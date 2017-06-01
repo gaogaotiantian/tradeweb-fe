@@ -505,6 +505,9 @@ var v_new_post = new Vue ( {
         level_item_limit: function() {
             var lim = [0, 3, 5, 8, 12];
             return lim[store.state.level];
+        },
+        categories: function() {
+            return v_main.categories.slice(1);
         }
     },
     methods: {
