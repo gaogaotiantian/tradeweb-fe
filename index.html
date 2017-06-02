@@ -17,6 +17,7 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <script src="https://cdn.bootcss.com/vue/2.3.3/vue.js"></script>
   <script src="https://cdn.bootcss.com/vuex/2.3.1/vuex.js"></script>
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
   <link href="./mine.css" rel="stylesheet">
   </head>
 <body>
@@ -80,6 +81,11 @@
           </div>
         </div>
         <div id="posts_div" class="col-md-10">
+          <div class="row">
+            <div class="col-md-12">
+              <div v-if="isLoading" class="loader"></div>
+            </div>
+          </div>
           <div class="row" v-for="post in posts" v-if="currPage == 'home'">
             <div class="col-md-12">
               <v-post :post="post" inline-template>
@@ -639,7 +645,7 @@
                   {{err_msg}}
                 </div>
                 <div class="col-md-1 pull-right controls">
-                  <button class="btn btn-success pull-right">确定</button>
+                  <button class="btn btn-success pull-right" v-bind:class="{disabled:isLoading}"><i v-if="isLoading" class="fa fa-spinner fa-spin"></i>确定</button>
                 </div>
                 <div class="col-md-1 pull-right controls">
                   <button class="btn btn-fail pull-right" data-dismiss="modal">取消</button>
@@ -710,10 +716,10 @@
                 {{err_msg}}
               </div>
               <div class="col-md-2 pull-right controls">
-                <button class="btn btn-lg btn-success pull-right" @click.prevent="Submit()">确定</button>
+                  <button class="btn btn-success pull-right" v-bind:class="{disabled:isLoading}" @click.prevent="Submit()"><i v-if="isLoading" class="fa fa-spinner fa-spin"></i>确定</button>
               </div>
               <div class="col-md-2 pull-right controls">
-                <button class="btn btn-lg btn-fail pull-right" data-dismiss="modal">取消</button>
+                <button class="btn btn-fail pull-right" data-dismiss="modal">取消</button>
               </div>
             </div>
 

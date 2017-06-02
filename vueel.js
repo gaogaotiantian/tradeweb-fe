@@ -97,7 +97,6 @@ const store = new Vuex.Store( {
                     
                 },
                 error: function(msg) {
-                    console.log("cleared there")
                     commit('ClearUser');
                 }
             })
@@ -118,7 +117,6 @@ const store = new Vuex.Store( {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify({"username": state.username, "token":state.token}),
                 success: function(msg) {
-                    console.log(msg)
                     commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
                     commit('SetLevel', msg['level']);
                     commit('SetCards', msg['cards']);
@@ -238,7 +236,6 @@ Vue.component('v-purse', {
                     v.$emit('usecard');
                 },
                 error: function(xhr) {
-                    console.log( xhr);
                     v_err_msg.ShowError(xhr['responseJSON']['msg']);
                 }
             })
@@ -301,7 +298,8 @@ var v_confirm = new Vue( {
         address: "",
         note: "",
         confirmFail: false,
-        err_msg: ""
+        err_msg: "",
+        isLoading: false
     },
     computed: {
         order: function() {
@@ -319,6 +317,7 @@ var v_confirm = new Vue( {
     },
     methods: {
         Submit: function() {
+            this.isLoading = true;
             var v = this;
             var ajax_data = {
                 reference : store.state.orderPost.id,
@@ -341,12 +340,14 @@ var v_confirm = new Vue( {
                 success: function(msg) {
                     v.show_panel = 'success';
                     v.confirmFail = false;
+                    v.isLoading = false;
                     setTimeout(function(){
                         window.location.replace('/');
                         v.show_panel = 'normal';
                     }, 3000);
                 },
                 error: function(xhr) {
+                    v.isLoading = false;
                     v.confirmFail = true;
                     v.err_msg = JSON.parse(xhr['responseText'])["msg"];
                 }
@@ -474,7 +475,8 @@ var v_new_post = new Vue ( {
         prices: [],
         avai: [],
         show_panel: "normal",
-        err_msg: ""
+        err_msg: "",
+        isLoading: false,
     },
     computed: {
         errors : function() {
@@ -520,7 +522,6 @@ var v_new_post = new Vue ( {
     },
     methods: {
         SubmitPost: function() {
-            console.log('submit')
             store.dispatch('CheckTokenValid');
             if (this.has_error) {
                 this.err_msg = "表格输入有误";
@@ -528,6 +529,7 @@ var v_new_post = new Vue ( {
                 this.err_msg = "至少需要一个物品！";
             } else if (store.state.isLogin) {
                 var v = this;
+                this.isLoading = true;
                 $.ajax( {
                     url: server_url + '/post',
                     method: 'POST',
@@ -544,6 +546,7 @@ var v_new_post = new Vue ( {
                         "expire_time":86400
                     }),
                     success: function(msg) {
+                        v.isLoading = false;
                         v.show_panel = 'success';
                         v.err_msg = "";
                         setTimeout(function(){
@@ -552,6 +555,7 @@ var v_new_post = new Vue ( {
                         }, 3000);
                     },
                     error: function(xhr) {
+                        v.isLoading = false;
                         v.err_msg = JSON.parse(xhr["responseText"])["msg"];
                     }
                 });
@@ -934,12 +938,10 @@ Vue.component ('v-order', {
                     contentType: 'application/json;charset=UTF-8',
                     data: data,
                     success: function(msg) {
-                        console.log(msg);
                         $('#action-confirm').modal('hide');
                         window.location.replace('/');
                     },
                     error: function(xhr) {
-                        console.log(xhr);
                     }
                 })
             };
@@ -1012,7 +1014,6 @@ Vue.component('v-profile', {
                     v.password_success_msg = "修改密码成功!"
                 },
                 error: function(xhr) {
-                    console.log(xhr['responseJSON']["msg"])
                     v.password_err_msg = xhr['responseJSON']["msg"];
                 }
             })
@@ -1084,7 +1085,6 @@ Vue.component('v-shop', {
                     v.Update();
                 },
                 error: function(xhr) {
-                    console.log( xhr);
                 }
             })
         },
@@ -1097,11 +1097,9 @@ Vue.component('v-shop', {
                 cache: false,
                 contentType: 'application/json;charset=UTF-8',
                 success: function(msg) {
-                    console.log(msg)
                     v.cards = msg;
                 },
                 error: function(xhr) {
-                    console.log( xhr);
                 }
             })
         },
@@ -1126,6 +1124,7 @@ var v_main = new Vue( {
         currPageNum: 1,
         posts:[],
         orders:[],
+        isLoading: false,
     },
     computed: {
         isLogin: function() {
@@ -1157,7 +1156,7 @@ var v_main = new Vue( {
             v.posts = [];
             if (v.post_category == '我的'){ 
                 store.dispatch('CheckTokenValid');
-                if (this.$store.state.isLogin) {
+                if (store.state.isLogin) {
                     ajax_url = server_url + '/getmypost';
                     ajax_data = {
                         "username": this.$store.state.username,
@@ -1167,6 +1166,7 @@ var v_main = new Vue( {
                     };
                 } else {
                     v.posts = [];
+                    v.isLoading = false;
                     return;
                 }
             } else {
@@ -1189,6 +1189,10 @@ var v_main = new Vue( {
                         msg[i].is_display = false;
                     }
                     v.posts = JSON.parse(JSON.stringify(msg));
+                    v.isLoading = false;
+                },
+                error: function(msg) {
+                    v.isLoading = false;
                 }
             })
         },
@@ -1213,10 +1217,10 @@ var v_main = new Vue( {
                         msg[i].is_display = false;
                     }
                     v.orders = JSON.parse(JSON.stringify(msg));
-                    console.log(v.orders)
+                    v.isLoading = false;
                 },
                 error: function(xhr) {
-                    console.log(xhr);
+                    v.isLoading = false;
                 },
                 statusCode: {
                     401: function() {
@@ -1226,6 +1230,7 @@ var v_main = new Vue( {
             })
         },
         ChangePageNum: function(pageNum) {
+            this.isLoading = true;
             if (pageNum >= 1) {
                 this.currPageNum = pageNum;
                 if (pageNum > 3) {
@@ -1244,6 +1249,7 @@ var v_main = new Vue( {
         },
         ClickTab: function(category) {
             $('#side-collapse').collapse('hide');
+            this.isLoading = true;
             if (this.currPage == 'home') {
                 this.post_category = category;
                 v_nav.category = category;
