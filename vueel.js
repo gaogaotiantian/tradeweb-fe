@@ -391,7 +391,7 @@ var v_login = new Vue( {
                     store.commit('SetLogin', true);
                     setTimeout(function() {
                         window.location.replace('/')},
-                        1500
+                        500
                     );
                 },
                 error: function(xhr) {
@@ -416,7 +416,7 @@ var v_login = new Vue( {
                     store.commit('SetLogin', true);
                     setTimeout(function() {
                         window.location.replace('/')},
-                        1500
+                        500
                     );
                 },
                 error: function(xhr) {
@@ -482,8 +482,15 @@ var v_new_post = new Vue ( {
             for (var i = 0; i < this.max_item_num; i++) {
                 e.push((this.items[i] != "" && this.prices[i] == ""));
             }
-            console.log(e)
             return e;
+        },
+        has_error: function() {
+            for (var i = 0; i < this.errors.length; i++) {
+                if (this.errors[i] == true) {
+                    return true;
+                }
+            }
+            return false;
         },
         valid_items : function() {
             var temp_items = [];
@@ -515,7 +522,11 @@ var v_new_post = new Vue ( {
         SubmitPost: function() {
             console.log('submit')
             store.dispatch('CheckTokenValid');
-            if (store.state.isLogin) {
+            if (this.has_error) {
+                this.err_msg = "表格输入有误";
+            } else if (this.valid_items.length == 0) {
+                this.err_msg = "至少需要一个物品！";
+            } else if (store.state.isLogin) {
                 var v = this;
                 $.ajax( {
                     url: server_url + '/post',
