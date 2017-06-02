@@ -596,6 +596,7 @@ var v_nav = new Vue ( {
     },
     methods : {
         ChangeContent: function(c) {
+            $('#header-collapse').collapse('hide');
             store.dispatch('UpdateUserInfo');
             v_main.currPage = c;
             if (c == 'home') {
@@ -1242,6 +1243,7 @@ var v_main = new Vue( {
             }
         },
         ClickTab: function(category) {
+            $('#side-collapse').collapse('hide');
             if (this.currPage == 'home') {
                 this.post_category = category;
                 v_nav.category = category;
