@@ -45,6 +45,16 @@ input[type=number]::-webkit-outer-spin-button {
     }
 }
 
+.row.no-gutter {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.row.no-gutter [class*='col-'] {
+  padding-right: 0;
+  padding-left: 0;
+}
+
 .bold {
     font-weight:bold;
 }

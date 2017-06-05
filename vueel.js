@@ -1,5 +1,5 @@
-//var server_url = "http://localhost:8000";
-var server_url = "https://fathomless-island-85775.herokuapp.com/";
+var server_url = "http://localhost:8000";
+//var server_url = "https://fathomless-island-85775.herokuapp.com/";
 const store = new Vuex.Store( {
     state : {
         isLogin: false,
@@ -471,9 +471,11 @@ var v_new_post = new Vue ( {
         category: "",
         content: "",
         max_item_num : 6,
+        pic_link: "",
         items: [],
         prices: [],
         avai: [],
+        images: [],
         show_panel: "normal",
         err_msg: "",
         isLoading: false,
@@ -543,6 +545,7 @@ var v_new_post = new Vue ( {
                         "content":v.content,
                         "items":v.valid_items,
                         "availability":v.availability,
+                        "images":v.images,
                         "expire_time":86400
                     }),
                     success: function(msg) {
@@ -559,6 +562,18 @@ var v_new_post = new Vue ( {
                         v.err_msg = JSON.parse(xhr["responseText"])["msg"];
                     }
                 });
+            }
+        },
+        RemoveImage: function(im) {
+            var idx = this.images.indexOf(im);
+            if (idx > -1) {
+                this.images.splice(idx, 1);
+            }
+        },
+        AddImage: function() {
+            if (this.pic_link.length > 0) {
+                this.images.push(this.pic_link);
+                this.pic_link = "";
             }
         },
         AddLine: function() {

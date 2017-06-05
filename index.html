@@ -117,6 +117,13 @@
                     <div class="row">
                       <div class="col-md-6 col-xs-12">
                         <p class="multiline-content">{{post.content}}</p>
+                        <div class="row no-gutter">
+                          <div class="col-md-3" v-for="image in post.images">
+                            <a v-bind:href="image" target="_blank" class="thumbnail">
+                              <img v-bind:src="image"></img>
+                            </a>
+                          </div>
+                        </div>
                       </div>
                       <div class="col-md-6 col-xs-12">
                         <v-items ref="v_items" inline-template :items="post.items" :post="post">
@@ -612,6 +619,28 @@
               <div class="col-md-6 col-xs-12">
                 <label for="new_post_content"></label>
                 <textarea rows="10" class="form-control" id="new_post_content" required="" placeholder="简单介绍一下你的东西吧！" v-model="content"></textarea>
+                <div class="panel">
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="input-group">
+                        <input type="text" class="form-control" placeholder="请输入图片链接" v-model="pic_link">
+                        <span class="input-group-btn">
+                          <button class="btn btn-default" type="button" @click="AddImage()">添加图片</button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row no-gutter">
+                    <div class="col-md-3" v-for="image in images">
+                      <a class="pull-right" @click.stop="RemoveImage(image)">
+                        <span class="glyphicon glyphicon-remove"></span>
+                      </a>
+                      <a v-bind:href="image" target="_blank" class="thumbnail">
+                        <img v-bind:src="image"></img>
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="col-md-6 col-xs-12">
                 <label></label>
