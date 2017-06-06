@@ -110,24 +110,28 @@ const store = new Vuex.Store( {
                 }
                 store.commit('SetLoadedLocal', true);
             }
-            $.ajax( {
-                url: server_url+"/myinfo",
-                method: "POST",
-                dataType: "json",
-                contentType: 'application/json;charset=UTF-8',
-                data: JSON.stringify({"username": state.username, "token":state.token}),
-                success: function(msg) {
-                    commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
-                    commit('SetLevel', msg['level']);
-                    commit('SetCards', msg['cards']);
-                    commit('SetPendingRequests', msg['pending_requests']);
-                    v_confirm.email = msg["email"];
-                    v_confirm.cell = msg["cell"];
-                    v_confirm.address = msg["address"];
-                },
-                error: function(msg) {
-                    commit('ClearUser');
-                }
+            return new Promise((resolve, reject) => {
+                $.ajax( {
+                    url: server_url+"/myinfo",
+                    method: "POST",
+                    dataType: "json",
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify({"username": state.username, "token":state.token}),
+                    success: function(msg) {
+                        commit('SetInfo', {"email": msg["email"], "cell": msg["cell"], "address": msg['address']});
+                        commit('SetLevel', msg['level']);
+                        commit('SetCards', msg['cards']);
+                        commit('SetPendingRequests', msg['pending_requests']);
+                        v_confirm.email = msg["email"];
+                        v_confirm.cell = msg["cell"];
+                        v_confirm.address = msg["address"];
+                        resolve(msg);
+                    },
+                    error: function(msg) {
+                        commit('ClearUser');
+                        reject(msg);
+                    }
+                })
             })
         },
         Logoff({commit, state}) {
@@ -163,7 +167,7 @@ Vue.component('register', {
             store.dispatch('Logoff');
         }
     },
-    created() {
+    mounted() {
         store.dispatch("CheckTokenValid");
     }
 });
@@ -616,21 +620,23 @@ var v_nav = new Vue ( {
     methods : {
         ChangeContent: function(c) {
             $('#header-collapse').collapse('hide');
-            store.dispatch('UpdateUserInfo');
-            v_main.currPage = c;
-            if (c == 'home') {
-                $('#home_ul > li').removeClass('active');
-                $('#home_ul > li').first().addClass('active');
-                this.category = '我的';
-                v_main.post_category = '我的';
-                v_main.GetPosts();
-            } else if (c == 'myOrder') {
-                $('#myorder_ul > li').removeClass('active');
-                $('#myorder_ul > li').first().addClass('active');
-                this.category = '向我求购'
-                v_main.order_category = 'toMe';
-                v_main.GetOrders();
-            }
+            store.dispatch('UpdateUserInfo').then( response => {
+                v_main.currPage = c;
+                if (c == 'home') {
+                    $('#home_ul > li').removeClass('active');
+                    $('#home_ul > li').first().addClass('active');
+                    this.category = '我的';
+                    v_main.post_category = '我的';
+                    v_main.GetPosts();
+                } else if (c == 'myOrder') {
+                    $('#myorder_ul > li').removeClass('active');
+                    $('#myorder_ul > li').first().addClass('active');
+                    this.category = '向我求购'
+                    v_main.order_category = 'toMe';
+                    v_main.GetOrders();
+                }
+            }, error => {
+            })
         }
     },
 });
@@ -1281,9 +1287,11 @@ var v_main = new Vue( {
         },
     },
     mounted() {
-        store.dispatch('UpdateUserInfo');
+        store.dispatch('UpdateUserInfo').then(response => {
+            this.GetPosts();
+        }, error => {
+        });
         $('#home_ul > li').removeClass('active');
         $('#home_ul > li').first().addClass('active');
-        this.GetPosts();
     }
 });
