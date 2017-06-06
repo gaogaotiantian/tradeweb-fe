@@ -16,7 +16,7 @@ const store = new Vuex.Store( {
         pendingRequests: 0,
         checkusername: "",
         loadedLocal: false,
-        categories: ['我的','食品','衣物','学术','家具','电子','拼车','其他'],
+        categories: ['全部','食品','衣物','学术','家具','电子','拼车','其他','我的'],
     },
     mutations: {
         SetOrder (state, data) {
@@ -610,7 +610,7 @@ var v_new_post = new Vue ( {
 var v_nav = new Vue ( {
     el: '#top_nav',
     data: {
-        category: "我的"
+        category: "全部"
     },
     computed: {
         pendingRequests: function() {
@@ -625,8 +625,8 @@ var v_nav = new Vue ( {
                 if (c == 'home') {
                     $('#home_ul > li').removeClass('active');
                     $('#home_ul > li').first().addClass('active');
-                    this.category = '我的';
-                    v_main.post_category = '我的';
+                    this.category = '全部';
+                    v_main.post_category = '全部';
                     v_main.GetPosts();
                 } else if (c == 'myOrder') {
                     $('#myorder_ul > li').removeClass('active');
@@ -1138,7 +1138,7 @@ var v_main = new Vue( {
     store,
     data : {
         currPage: "home",
-        post_category: "我的",
+        post_category: "全部",
         order_category: "toMe",
         firstPageNum: 1,
         lastPageNum: 5,
@@ -1290,6 +1290,7 @@ var v_main = new Vue( {
         store.dispatch('UpdateUserInfo').then(response => {
             this.GetPosts();
         }, error => {
+            this.GetPosts();
         });
         $('#home_ul > li').removeClass('active');
         $('#home_ul > li').first().addClass('active');
