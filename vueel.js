@@ -619,7 +619,7 @@ var v_new_post = new Vue ( {
         }
     },
     created() {
-        this.max_item_num = 1;
+        this.max_item_num = 3;
         for (var i = 0; i < this.max_item_num; i++) {
             this.items.push("");
             this.prices.push("");
