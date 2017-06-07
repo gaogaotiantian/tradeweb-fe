@@ -43,6 +43,11 @@ input[type=number]::-webkit-outer-spin-button {
         display:flex; 
         align-items:flex-end;
     }
+
+    .flex-center-row {
+        display:flex; 
+        align-items:center;
+    }
 }
 
 .row.no-gutter {

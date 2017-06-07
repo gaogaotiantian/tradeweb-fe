@@ -1,5 +1,8 @@
-//var server_url = "http://localhost:8000";
-var server_url = "https://fathomless-island-85775.herokuapp.com/";
+var server_url = "http://localhost:8000";
+//var server_url = "https://fathomless-island-85775.herokuapp.com/";
+
+$.cloudinary.config({ cloud_name: 'xueziji', api_key: '588985454677234'});
+
 const store = new Vuex.Store( {
     state : {
         isLogin: false,
@@ -13,6 +16,7 @@ const store = new Vuex.Store( {
         totalPrice: 0,
         level: 0,
         cards: {},
+        levelStat: [{'benefit': 0, 'post_gap': 0, 'post_limit': 0}, {'benefit': 1, 'post_gap': 24, 'post_limit': 3}, {'benefit': 2, 'post_gap': 6, 'post_limit': 5}, {'benefit': 3, 'post_gap': 3, 'post_limit': 8}, {'benefit': 4, 'post_gap': 1, 'post_limit': 12}],
         pendingRequests: 0,
         checkusername: "",
         loadedLocal: false,
@@ -61,6 +65,9 @@ const store = new Vuex.Store( {
         },
         SetPendingRequests(state, data) {
             state.pendingRequests = data;
+        },
+        SetLevelStat(state, data) {
+            state.levelStat = data;
         },
         ClearUser(state) {
             state.isLogin = false;
@@ -133,6 +140,18 @@ const store = new Vuex.Store( {
                     }
                 })
             })
+        },
+        GetLevelStat({commit, state}) {
+            $.ajax( {
+              url: server_url+"/levelStat",
+              method: "POST",
+              dataType: "json",
+              contentType: 'application/json;charset=UTF-8',
+              data: JSON.stringify({}),
+              success: function(msg) {
+                  commit('SetLevelStat', msg);
+              }
+            });
         },
         Logoff({commit, state}) {
             $.ajax( {
@@ -519,8 +538,7 @@ var v_new_post = new Vue ( {
             return temp_avai
         },
         level_item_limit: function() {
-            var lim = [0, 3, 5, 8, 12];
-            return lim[store.state.level];
+            return store.state.levelStat[store.state.level]['post_limit'];
         },
         categories: function() {
             return store.state.categories.slice(1);
@@ -574,10 +592,13 @@ var v_new_post = new Vue ( {
                 this.images.splice(idx, 1);
             }
         },
-        AddImage: function() {
-            if (this.pic_link.length > 0) {
-                this.images.push(this.pic_link);
-                this.pic_link = "";
+        AddImage: function(link) {
+            console.log(link)
+            if (link.length > 0) {
+                this.images.push(link);
+                if (link == pic_link) {
+                    this.pic_link = "";
+                }
             }
         },
         AddLine: function() {
@@ -636,6 +657,20 @@ var v_nav = new Vue ( {
                     v_main.GetOrders();
                 }
             }, error => {
+                v_main.currPage = c;
+                if (c == 'home') {
+                    $('#home_ul > li').removeClass('active');
+                    $('#home_ul > li').first().addClass('active');
+                    this.category = '全部';
+                    v_main.post_category = '全部';
+                    v_main.GetPosts();
+                } else if (c == 'myOrder') {
+                    $('#myorder_ul > li').removeClass('active');
+                    $('#myorder_ul > li').first().addClass('active');
+                    this.category = '向我求购'
+                    v_main.order_category = 'toMe';
+                    v_main.GetOrders();
+                }
             })
         }
     },
@@ -692,13 +727,14 @@ Vue.component('v-profile-bulletin', {
             }
         },
         detail: function() {
-            var d = [[], [24, 1, 3],[6, 2, 5], [3, 3, 8], [1, 4, 12]];
             var ret = "";
             
-            ret += "发帖间隔"+d[this.level][0]+"小时，学分收益"+d[this.level][1]+"倍，每帖最多"+d[this.level][2]+"项。";
+            if (store.state.levelStat) {
+                ret += "发帖间隔"+store.state.levelStat[this.level]['post_gap']+"小时，学分收益"+store.state.levelStat[this.level]['benefit']+"倍，每帖最多"+store.state.levelStat[this.level]['post_limit']+"项。";
 
-            if (this.level > 1) {
-                ret += "（剩余" + Math.round(this.level_exp_time/86400)+"天）";
+                if (this.level > 1) {
+                    ret += "（剩余" + Math.round(this.level_exp_time/86400)+"天）";
+                }
             }
             return ret;
         }
@@ -1287,6 +1323,7 @@ var v_main = new Vue( {
         },
     },
     mounted() {
+        store.dispatch('GetLevelStat');
         store.dispatch('UpdateUserInfo').then(response => {
             this.GetPosts();
         }, error => {
@@ -1295,4 +1332,45 @@ var v_main = new Vue( {
         $('#home_ul > li').removeClass('active');
         $('#home_ul > li').first().addClass('active');
     }
+});
+
+
+UpdateFileUpload = function() {
+    var d = new Date();
+    var t = d.getTime();
+    var data = {
+        "timestamp": t,
+        "callback": "/cloudinary_cors.html",
+        "api_key": "588985454677234",
+    };
+    $.ajax({
+        url: server_url + '/signature',
+        method: 'POST',
+        dataType: "json",
+        contentType: 'application/json;charset=UTF-8',
+        data: JSON.stringify(data),
+        success: function(msg) {
+            data["signature"] = msg["signature"];
+            $(".cloudinary-fileupload").attr("data-form-data", JSON.stringify(data))
+            $("input.cloudinary-fileupload[type=file]").cloudinary_fileupload();
+            $('.cloudinary-fileupload').bind('fileuploadprogress', function(e, data) {
+                $('.progress-bar').css('width', Math.round((data.loaded * 100.0)/data.total) + '%');
+            });
+            $('.cloudinary-fileupload').bind('fileuploaddone', function(e, data) {
+                console.log(e);
+                console.log(data);
+                var path = data['result']['secure_url'];
+                console.log(path)
+                v_new_post.AddImage(path);
+            });
+        },
+        error: function(xhr) {
+            console.errors("failed to get signature")
+        },
+    })
+}
+$(function() {
+  if($.fn.cloudinary_fileupload !== undefined) {
+    UpdateFileUpload();
+  }
 });
