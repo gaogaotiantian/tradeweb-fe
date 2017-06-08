@@ -99,10 +99,8 @@
                       <div class="col-md-8 col-xs-12">
                         <h4 v-bind:class="classObject">{{post.title}}</h4>
                       </div>
-                      <div class="col-md-2 col-xs-8" v-if="!post['is_deleted'] && !deleteConfirm">
+                      <div class="col-md-3 col-xs-9" v-if="!post['is_deleted'] && !deleteConfirm">
                         <v-usertag :username="post.author"></v-usertag><span>, {{post.timeago}}</span>
-                      </div>
-                      <div class="col-md-1 col-xs-1" v-if="!post['is_deleted'] && !deleteConfirm">
                       </div>
                       <div class="col-md-1 col-xs-3" v-if="!post['is_deleted'] && !deleteConfirm">
                         <a><span class="glyphicon glyphicon-wrench" v-if="IsAuthorMe" @click.stop="UseCard"></button></a>
