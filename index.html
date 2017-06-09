@@ -247,7 +247,7 @@
             <nav aria-label="Page navigation" class="text-center">
               <ul class="pagination" id="foot_page">
                 <li><a href="#" aria-label="Previous"><span aria-hidden="true" @click="ChangePageNum(currPageNum-1)">&laquo;</span></a></li>
-                <li v-for="i in 5" v-bind:class="{active: (firstPageNum+i-1)==currPageNum}"><a href="#" @click=ChangePageNum(firstPageNum+i-1)>{{firstPageNum + i - 1}}</a></li>
+                <li v-for="i in 5" v-if="firstPageNum+i-1 <= maxPageNum" v-bind:class="{active: (firstPageNum+i-1)==currPageNum}"><a href="#" @click=ChangePageNum(firstPageNum+i-1)>{{firstPageNum + i - 1}}</a></li>
                 <li><a href="#" aria-label="Next" @click="ChangePageNum(currPageNum+1)"><span aria-hidden="true">&raquo;</span></a></li>
               </ul>
             </nav>

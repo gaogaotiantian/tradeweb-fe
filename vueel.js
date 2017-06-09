@@ -1,5 +1,5 @@
-//var server_url = "http://localhost:8000";
-var server_url = "https://fathomless-island-85775.herokuapp.com/";
+var server_url = "http://localhost:8000";
+//var server_url = "https://fathomless-island-85775.herokuapp.com/";
 
 $.cloudinary.config({ cloud_name: 'xueziji', api_key: '588985454677234'});
 
@@ -1176,9 +1176,11 @@ var v_main = new Vue( {
         currPage: "home",
         post_category: "全部",
         order_category: "toMe",
+        postPerPage: 10,
         firstPageNum: 1,
         lastPageNum: 5,
         currPageNum: 1,
+        maxPageNum: 1,
         posts:[],
         orders:[],
         isLoading: false,
@@ -1218,8 +1220,8 @@ var v_main = new Vue( {
                     ajax_data = {
                         "username": this.$store.state.username,
                         "token": this.$store.state.token,
-                        "start": 10*(v.currPageNum - 1),
-                        "end": 10*(v.currPageNum)
+                        "start": v.postPerPage*(v.currPageNum - 1),
+                        "end": v.postPerPage*(v.currPageNum)
                     };
                 } else {
                     v.posts = [];
@@ -1230,8 +1232,8 @@ var v_main = new Vue( {
                 ajax_url = server_url + '/getpost'
                 ajax_data = {
                     "category": v.post_category,
-                    "start": 10*(v.currPageNum - 1),
-                    "end": 10*(v.currPageNum)
+                    "start": v.postPerPage*(v.currPageNum - 1),
+                    "end": v.postPerPage*(v.currPageNum)
                 };
             }
             $.ajax({
@@ -1242,10 +1244,11 @@ var v_main = new Vue( {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify(ajax_data),
                 success: function(msg) {
-                    for (var i = 0; i < msg.length; i++) {
-                        msg[i].is_display = false;
+                    for (var i = 0; i < msg['posts'].length; i++) {
+                        msg['posts'][i].is_display = false;
                     }
-                    v.posts = JSON.parse(JSON.stringify(msg));
+                    v.posts = JSON.parse(JSON.stringify(msg['posts']));
+                    v.maxPageNum = Math.ceil(msg['count']/v.postPerPage);
                     v.isLoading = false;
                 },
                 error: function(msg) {
@@ -1270,10 +1273,11 @@ var v_main = new Vue( {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify(ajax_data),
                 success: function(msg) {
-                    for (var i = 0; i < msg.length; i++) {
-                        msg[i].is_display = false;
+                    for (var i = 0; i < msg['orders'].length; i++) {
+                        msg['orders'][i].is_display = false;
                     }
-                    v.orders = JSON.parse(JSON.stringify(msg));
+                    v.orders = JSON.parse(JSON.stringify(msg['orders']));
+                    v.maxPageNum = Math.ceil(msg['count']/v.postPerPage);
                     v.isLoading = false;
                 },
                 error: function(xhr) {
@@ -1288,7 +1292,7 @@ var v_main = new Vue( {
         },
         ChangePageNum: function(pageNum) {
             this.isLoading = true;
-            if (pageNum >= 1) {
+            if (pageNum >= 1 && pageNum <= this.maxPageNum) {
                 this.currPageNum = pageNum;
                 if (pageNum > 3) {
                     this.firstPageNum = pageNum - 2;
@@ -1307,6 +1311,7 @@ var v_main = new Vue( {
         ClickTab: function(category) {
             $('#side-collapse').collapse('hide');
             this.isLoading = true;
+            this.currPageNum = 1;
             if (this.currPage == 'home') {
                 this.post_category = category;
                 v_nav.category = category;
@@ -1365,7 +1370,7 @@ UpdateFileUpload = function() {
             });
         },
         error: function(xhr) {
-            console.errors("failed to get signature")
+            console.log(xhr);
         },
     })
 }
