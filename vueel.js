@@ -332,10 +332,7 @@ var v_confirm = new Vue( {
             return store.state.totalPrice;
         },
         title: function() {
-            if (store.state.post && store.state.post.title) {
-                return store.state.post.title;
-            }
-            return "";
+            return store.state.orderPost.title;
         }
     },
     methods: {
