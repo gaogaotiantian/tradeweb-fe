@@ -84,7 +84,8 @@ const store = new Vuex.Store( {
             if (state.loadedLocal == false) {
                 if (typeof(Storage) !== "undefined") {
                     if (localStorage.username !== undefined) {
-                        store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token})
+                        store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token});
+                        store.commit('SetLogin', true)
                     }
                 }
                 store.commit('SetLoadedLocal', true);
@@ -99,12 +100,18 @@ const store = new Vuex.Store( {
                     if (msg['valid'] == true) {
                         commit('SetLogin', true);
                     } else {
-                        commit('ClearUser');
+                        if (state.isLogin) {
+                            commit('ClearUser');
+                            window.location.replace('/');
+                        }
                     }
                     
                 },
                 error: function(msg) {
-                    commit('ClearUser');
+                    if (state.isLogin) {
+                        commit('ClearUser');
+                        window.location.replace('/');
+                    }
                 }
             })
         },
@@ -112,7 +119,8 @@ const store = new Vuex.Store( {
             if (state.loadedLocal == false) {
                 if (typeof(Storage) !== "undefined") {
                     if (localStorage.username !== undefined) {
-                        store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token})
+                        store.commit('SetUser',{"username":localStorage.username,"token":localStorage.token});
+                        store.commit('SetLogin', true);
                     }
                 }
                 store.commit('SetLoadedLocal', true);
@@ -135,7 +143,10 @@ const store = new Vuex.Store( {
                         resolve(msg);
                     },
                     error: function(msg) {
-                        commit('ClearUser');
+                        if (state.isLogin) {
+                            commit('ClearUser');
+                            window.location.replace('/');
+                        }
                         reject(msg);
                     }
                 })
