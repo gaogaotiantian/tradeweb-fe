@@ -1,5 +1,5 @@
-var server_url = "http://localhost:8000";
-//var server_url = "https://fathomless-island-85775.herokuapp.com/";
+//var server_url = "http://localhost:8000";
+var server_url = "https://fathomless-island-85775.herokuapp.com/";
 
 $.cloudinary.config({ cloud_name: 'xueziji', api_key: '588985454677234'});
 
